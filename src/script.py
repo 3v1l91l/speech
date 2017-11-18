@@ -7,6 +7,7 @@ import pandas as pd
 from scipy import signal
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
+from librosa.effects import trim
 
 import keras
 
@@ -14,50 +15,41 @@ from keras.layers import Conv2D, BatchNormalization, MaxPooling2D, Dense, Input,
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard, ModelCheckpoint
+import matplotlib.pyplot as plt
+from lib import get_path_label_df
 
 
-def get_data(path):
-    ''' Returns dataframe with columns: 'path', 'word'.'''
-    datadir = Path(path)
-    files = [(str(f), f.parts[-2]) for f in datadir.glob('**/*.wav') if f]
-    df = pd.DataFrame(files, columns=['path', 'word'])
-
-    return df
-
+train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence']
+labels = train_words + ['unknown']
 
 def prepare_data(df):
     '''Transform data into something more useful.'''
-    train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go']
     words = df.word.unique().tolist()
-    silence = ['_background_noise_']
-    unknown = [w for w in words if w not in silence + train_words]
-
-    # there are only 6 silence files. Mark them as unknown too.
-    df.loc[df.word.isin(silence), 'word'] = 'unknown'
+    unknown = [w for w in words if w not in train_words]
+    df = df.drop(df[df.word.isin(['_background_noise_'])].index)
     df.loc[df.word.isin(unknown), 'word'] = 'unknown'
-
     return df
 
 
-def get_specgrams(paths, nsamples=16000):
+def get_specgrams(paths, duration=1):
     '''
     Given list of paths, return specgrams.
     '''
-
+    fs = 16000
     # read the wav files
     wavs = [wavfile.read(x)[1] for x in paths]
 
     # zero pad the shorter samples and cut off the long ones.
     data = []
     for wav in wavs:
-        if wav.size < 16000:
-            d = np.pad(wav, (nsamples - wav.size, 0), mode='constant')
+        if wav.size < fs:
+            d = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
         else:
-            d = wav[0:nsamples]
+            d = wav[0:fs * duration]
         data.append(d)
 
     # get the specgram
-    specgram = [signal.spectrogram(d, nperseg=256, noverlap=128)[2] for d in data]
+    specgram = [signal.spectrogram(d, fs=fs, nperseg=256, noverlap=128)[2] for d in data]
     specgram = [s.reshape(129, 124, -1) for s in specgram]
 
     return specgram
@@ -75,7 +67,6 @@ def batch_generator(X, y, batch_size=16):
         label = y[idx]
 
         specgram = get_specgrams(im)
-
         yield np.concatenate([specgram]), label
 
 
@@ -92,15 +83,14 @@ def get_model(shape):
     model = Dense(32, activation='elu')(model)
     model = Dropout(0.25)(model)
 
-    # 11 because background noise has been taken out
-    model = Dense(11, activation='sigmoid')(model)
+    model = Dense(len(labels), activation='sigmoid')(model)
 
     model = Model(inputs=inputlayer, outputs=model)
 
     return model
 
 
-train = prepare_data(get_data('../input/train/audio/'))
+train = prepare_data(get_path_label_df('../input/train/audio/'))
 shape = (129, 124, 1)
 model = get_model(shape)
 model.compile(loss='categorical_crossentropy', optimizer=Adam(), metrics=['accuracy'])
@@ -109,9 +99,10 @@ model.compile(loss='categorical_crossentropy', optimizer=Adam(), metrics=['accur
 
 labelbinarizer = LabelBinarizer()
 X = train.path
-y = labelbinarizer.fit_transform(train.word)
-X, Xt, y, yt = train_test_split(X, y, test_size=0.3, stratify=y)
 
+y = labelbinarizer.fit_transform(train.word)
+X, Xt, y, yt = train_test_split(X, y, test_size=0.2, stratify=y)
+#
 tensorboard = TensorBoard(log_dir='./logs/{}'.format(time.time()), batch_size=32)
 
 train_gen = batch_generator(X.values, y, batch_size=32)
@@ -130,7 +121,7 @@ model.load_weights("model.model")
 
 # Create a submission
 
-test = prepare_data(get_data('../input/test/'))
+test = prepare_data(get_path_label_df('../input/test/'))
 
 predictions = []
 paths = test.path.tolist()

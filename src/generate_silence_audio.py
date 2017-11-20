@@ -10,7 +10,7 @@ if not os.path.exists(silence_audio_dir):
 
 df = get_path_label_df(os.path.join(audio_dir, '_background_noise_'))
 wavs = [wavfile.read(x)[1] for x in df.path]
-gen_silence_files_num = 10
+gen_silence_files_num = 2000
 idx = np.random.randint(0, len(wavs)-1, gen_silence_files_num)
 fs = 16000
 gen_wavs = []

@@ -15,10 +15,13 @@ import matplotlib.pyplot as plt
 from lib import get_path_label_df, prepare_data, get_specgrams
 from keras import optimizers
 from keras.models import load_model
+# from predictor import predict_all
+from keras.applications.vgg16 import VGG16
+from keras.applications.inception_v3 import InceptionV3
 
 train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence']
 labels = train_words + ['unknown']
-shape = (96, 32, 1)
+shape = (99, 161, 1)
 
 def batch_generator(X, y, batch_size=16):
     '''
@@ -50,7 +53,9 @@ def get_model(shape):
     model = Dense(32, activation='elu')(model)
     # model = Dropout(0.25)(model)
 
-    model = Dense(len(labels), activation='sigmoid')(model)
+    model = Dense(len(labels), activation='softmax')(model)
+    model = VGG16(include_top=False, weights=None, input_tensor=None, input_shape=None,
+                                   pooling=None, classes=len(labels))
 
     model = Model(inputs=inputlayer, outputs=model)
 
@@ -104,7 +109,7 @@ model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_o
 
 model.fit_generator(
     generator=train_gen,
-    epochs=2,
+    epochs=1,
     steps_per_epoch=X.shape[0] // batch_size,
     validation_data=valid_gen,
     validation_steps=Xt.shape[0] // batch_size,
@@ -114,20 +119,19 @@ model.fit_generator(
 
 model = load_model('model.model')
 
-
-test = prepare_data(get_path_label_df('../input/test/'))
-paths = test.path.tolist()
-predictions = []
-# files = ['clip_1064e319a.wav', 'clip_26e1ae31b.wav']
-# paths = ['../input/test/audio/' + x for x in files]
-
-for path in paths[:100]:
-    specgram = get_specgrams([path], shape)
-    pred = model.predict(np.array(specgram))
-    predictions.extend(pred)
-
-labels = [labelbinarizer.inverse_transform(p.reshape(1, -1) == max(p), threshold=0.5)[0] for p in predictions]
-print(labels)
+# test = prepare_data(get_path_label_df('../input/test/'))
+# paths = test.path.tolist()
+# predictions = []
+# # files = ['clip_1064e319a.wav', 'clip_26e1ae31b.wav']
+# # paths = ['../input/test/audio/' + x for x in files]
+#
+# for path in paths[:100]:
+#     specgram = get_specgrams([path], shape)
+#     pred = model.predict(np.array(specgram))
+#     predictions.extend(pred)
+#
+# labels = [labelbinarizer.inverse_transform(p.reshape(1, -1) == max(p), threshold=0.5)[0] for p in predictions]
+# print(labels)
 # test['labels'] = labels
 # test.path = test.path.apply(lambda x: str(x).split('/')[-1])
 # submission = pd.DataFrame({'fname': test.path.tolist(), 'label': labels})

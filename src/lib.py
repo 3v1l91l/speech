@@ -23,6 +23,7 @@ def prepare_data(df):
     words = df.word.unique().tolist()
     unknown = [w for w in words if w not in train_words]
     df = df.drop(df[df.word.isin(['_background_noise_'])].index)
+    df.reset_index()
     df.loc[df.word.isin(unknown), 'word'] = 'unknown'
     return df
 
@@ -60,5 +61,6 @@ def get_specgrams(paths, shape, duration=1):
 
     specgram = [log_specgram(d, fs) for d in data]
     specgram = [s.reshape(shape[0], shape[1], -1) for s in specgram]
-
+    # specgram = [signal.spectrogram(d, nperseg=256, noverlap=128)[2] for d in data]
+    # specgram = [s.reshape(129, 124, -1) for s in specgram]
     return specgram

@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 from keras.models import Sequential, Model
 from keras.layers import Input, Dense, TimeDistributed, LSTM, Dropout, Activation
-from keras.layers import Convolution2D, MaxPooling2D, Flatten, Conv2D, GlobalMaxPooling2D
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Conv2D, GlobalMaxPooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.layers.advanced_activations import ELU
 from keras.optimizers import Adam
@@ -45,7 +45,7 @@ def get_model(shape):
     inputlayer = Input(shape=shape)
     #
     # model = BatchNormalization()(inputlayer)
-    # model = Conv2D(16, (3, 3), activation='elu')(model)
+    # model = Conv2D(16, ((2, 2)), activation='elu')(model)
     # model = Dropout(0.25)(model)
     # model = MaxPooling2D((2, 2))(model)
     #
@@ -62,17 +62,17 @@ def get_model(shape):
 
     # nb_filters = 32  # number of convolutional filters to use
     # pool_size = (2, 2)  # size of pooling area for max pooling
-    # kernel_size = (3, 3)  # convolution kernel size
+    # kernel_size = ((2, 2))  # convolution kernel size
     # nb_layers = 4
     #
     # model = Sequential()
-    # model.add(Convolution2D(nb_filters, kernel_size,
+    # model.add(Conv2D(nb_filters, kernel_size,
     #                         padding='valid', input_shape=shape))
     # model.add(BatchNormalization(axis=1))
     # model.add(Activation('relu'))
     #
     # for layer in range(nb_layers - 1):
-    #     model.add(Convolution2D(nb_filters, kernel_size))
+    #     model.add(Conv2D(nb_filters, kernel_size))
     #     model.add(BatchNormalization(axis=1))
     #     model.add(ELU(alpha=1.0))
     #     model.add(MaxPooling2D(pool_size=pool_size))
@@ -85,39 +85,47 @@ def get_model(shape):
     # model.add(Dense(12))
     # model.add(Activation("sigmoid"))
 
-    # Block 1
-    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(inputlayer)
-    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
+    model = Sequential()
+    model.add(Conv2D(64, (2, 2), border_mode='valid', input_shape=shape))
+    model.add(Activation('relu'))
+    model.add(Conv2D(64, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    model.add(Dropout(0.25))
 
-    # Block 2
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
+    model.add(Conv2D(128, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(Conv2D(128, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    model.add(Dropout(0.25))
 
-    # Block 3
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
+    model.add(Conv2D(256, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(Conv2D(256, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(Conv2D(256, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    model.add(Dropout(0.25))
 
-    # Block 4
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
+    model.add(Conv2D(512, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(Conv2D(512, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(Conv2D(512, (2, 2)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    model.add(Dropout(0.25))
 
-    # Block 5
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool')(x)
-
-    # Classification block
-    x = Flatten(name='flatten')(x)
-    x = Dense(4096, activation='relu', name='fc1')(x)
-    x = Dense(4096, activation='relu', name='fc2')(x)
-    x = Dense(12, activation='softmax', name='predictions')(x)
+    model.add(Flatten())
+    model.add(Dense(2000))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(2000))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(12, activation='softmax'))
 
     # x = GlobalMaxPooling2D()(x)
 
@@ -125,7 +133,7 @@ def get_model(shape):
     # any potential predecessors of `input_tensor`.
 
     # Create model.
-    model = Model(inputlayer, x, name='vgg16')
+    # model = Model(inputlayer, x, name='vgg16')
 
     return model
 

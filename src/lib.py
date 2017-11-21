@@ -29,43 +29,29 @@ def prepare_data(df):
     return df
 
 def get_specgrams(paths):
-    log_specgrams = []
+    len_paths = len(paths)
+    log_specgrams = [None] * len_paths
     fs = 16000
     duration = 1
-    for path in tqdm(paths):
-        wav,s = librosa.load(path)
+    for p in tqdm(range(len_paths)):
+        wav, s = librosa.load(paths[p])
         if wav.size < fs:
             wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
         else:
             wav = wav[0:fs * duration]
-        log_specgrams.append(log_spec(wav, fs))
-    log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
+        log_specgrams[p] = log_melspectrogram(wav, fs)[..., np.newaxis]
+        # log_specgrams[p] = spectrogram(wav, fs)[..., np.newaxis]
+
+    # log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
     return log_specgrams
 
 
-def log_spec(wav, fs):
+def log_melspectrogram(wav, fs):
     windows_samples = int(fs / 40)
     hop_samples = int(windows_samples/5)
     melspec = librosa.feature.melspectrogram(wav, n_mels=128, sr=fs, fmax=8000, n_fft=windows_samples, hop_length=hop_samples, power=2.0)
     logspec = librosa.logamplitude(melspec)
     return logspec
 
-# def get_specgrams(paths, shape, duration=1):
-#     '''
-#     Given list of paths, return specgrams.
-#     '''
-#     fs = 16000
-#     wavs = [wavfile.read(x)[1] for x in paths]
-#     data = []
-#     for wav in wavs:
-#         if wav.size < 16000:
-#             d = np.pad(wav, (fs*duration - wav.size, 0), mode='constant')
-#         else:
-#             d = wav[0:fs*duration]
-#         data.append(d)
-#
-#     # specgram = [log_specgram(d, fs) for d in data]
-#     # specgram = [s.reshape(shape[0], shape[1], -1) for s in specgram]
-#     specgram = [signal.spectrogram(d, nperseg=256, noverlap=128)[2] for d in data]
-#     specgram = [s.reshape(129, 124, -1) for s in specgram]
-#     return specgram
+def spectrogram(wav, fs):
+    return signal.spectrogram(wav, fs=fs, nperseg=256, noverlap=128)[2]

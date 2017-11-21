@@ -4,16 +4,16 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 import matplotlib.pyplot as plt
-from lib import logamp_melspec
+from lib import get_specgrams
 
 datadir = Path('../input/train/audio/off/')
 
 files = [str(f) for f in datadir.glob('**/*.wav') if f]
 
-specs = logamp_melspec(files[:1])
+specs = get_specgrams(files[:1])
 
-
-plt.imshow(specs[0])
+print(specs[0].shape)
+plt.imshow(specs[0].reshape(specs[0].shape[0], specs[0].shape[1]))
 plt.show()
 
 

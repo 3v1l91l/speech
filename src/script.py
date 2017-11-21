@@ -21,7 +21,7 @@ from keras.applications.inception_v3 import InceptionV3
 
 train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence']
 labels = train_words + ['unknown']
-shape = (129, 124, 1)
+shape = (128, 201, 1)
 
 def batch_generator(X, y, batch_size=16):
     '''
@@ -34,7 +34,7 @@ def batch_generator(X, y, batch_size=16):
         im = X[idx]
         label = y[idx]
 
-        specgram = get_specgrams(im, shape)
+        specgram = get_specgrams(im)
         yield np.concatenate([specgram]), label
 
 
@@ -86,7 +86,7 @@ def get_model(shape):
     # model.add(Activation("sigmoid"))
 
     model = Sequential()
-    model.add(Conv2D(64, (2, 2), border_mode='valid', input_shape=shape))
+    model.add(Conv2D(64, (2, 2), padding='valid', input_shape=shape))
     model.add(Activation('relu'))
     model.add(Conv2D(64, (2, 2)))
     model.add(Activation('relu'))
@@ -151,7 +151,7 @@ y = labelbinarizer.transform(train.word)
 X = train.path
 X, Xt, y, yt = train_test_split(X, y, test_size=0.2, stratify=y)
 
-batch_size = 32
+batch_size = 128
 train_gen = batch_generator(X.values, y, batch_size=batch_size)
 valid_gen = batch_generator(Xt.values, yt, batch_size=batch_size)
 model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False, verbose=1)

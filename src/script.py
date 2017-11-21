@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 from keras.models import Sequential, Model
 from keras.layers import Input, Dense, TimeDistributed, LSTM, Dropout, Activation
-from keras.layers import Convolution2D, MaxPooling2D, Flatten, Conv2D
+from keras.layers import Convolution2D, MaxPooling2D, Flatten, Conv2D, GlobalMaxPooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.layers.advanced_activations import ELU
 from keras.optimizers import Adam
@@ -21,7 +21,7 @@ from keras.applications.inception_v3 import InceptionV3
 
 train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence']
 labels = train_words + ['unknown']
-shape = (99, 161, 1)
+shape = (129, 124, 1)
 
 def batch_generator(X, y, batch_size=16):
     '''
@@ -43,21 +43,21 @@ def get_model(shape):
     Create a keras model.
     '''
     inputlayer = Input(shape=shape)
-
-    model = BatchNormalization()(inputlayer)
-    model = Conv2D(16, (3, 3), activation='elu')(model)
-    model = Dropout(0.25)(model)
-    model = MaxPooling2D((2, 2))(model)
-
-    model = Flatten()(model)
-    model = Dense(32, activation='elu')(model)
+    #
+    # model = BatchNormalization()(inputlayer)
+    # model = Conv2D(16, (3, 3), activation='elu')(model)
     # model = Dropout(0.25)(model)
-
-    model = Dense(len(labels), activation='softmax')(model)
-    model = VGG16(include_top=False, weights=None, input_tensor=None, input_shape=None,
-                                   pooling=None, classes=len(labels))
-
-    model = Model(inputs=inputlayer, outputs=model)
+    # model = MaxPooling2D((2, 2))(model)
+    #
+    # model = Flatten()(model)
+    # model = Dense(32, activation='elu')(model)
+    # # model = Dropout(0.25)(model)
+    #
+    # model = Dense(len(labels), activation='softmax')(model)
+    # # model = VGG16(include_top=False, weights=None, input_tensor=None, input_shape=None,
+    # #                                pooling=None, classes=len(labels))
+    #
+    # model = Model(inputs=inputlayer, outputs=model)
 
 
     # nb_filters = 32  # number of convolutional filters to use
@@ -84,6 +84,48 @@ def get_model(shape):
     # model.add(Dropout(0.5))
     # model.add(Dense(12))
     # model.add(Activation("sigmoid"))
+
+    # Block 1
+    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(inputlayer)
+    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
+
+    # Block 2
+    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
+
+    # Block 3
+    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
+    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
+    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
+
+    # Block 4
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
+
+    # Block 5
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool')(x)
+
+    # Classification block
+    x = Flatten(name='flatten')(x)
+    x = Dense(4096, activation='relu', name='fc1')(x)
+    x = Dense(4096, activation='relu', name='fc2')(x)
+    x = Dense(12, activation='softmax', name='predictions')(x)
+
+    # x = GlobalMaxPooling2D()(x)
+
+    # Ensure that the model takes into account
+    # any potential predecessors of `input_tensor`.
+
+    # Create model.
+    model = Model(inputlayer, x, name='vgg16')
 
     return model
 

@@ -27,23 +27,25 @@ def prepare_data(df):
     df.loc[df.word.isin(unknown), 'word'] = 'unknown'
     return df
 
-def log_specgram(audio, sample_rate, window_size=20,
-                 step_size=10, eps=1e-10):
-    nperseg = int(round(window_size * sample_rate / 1e3))
-    noverlap = int(round(step_size * sample_rate / 1e3))
-    freqs, times, spec = signal.spectrogram(audio,
-                                    fs=sample_rate,
-                                    window='hann',
-                                    nperseg=nperseg,
-                                    noverlap=noverlap,
-                                    detrend=False)
-    return np.log(spec.T.astype(np.float32) + eps)
+def windows(data, window_size):
+    start = 0
+    while start < len(data):
+        yield start, start + window_size
+        start += (window_size / 2)
 
-    # # audio, sample_rate = librosa.load(audio_path, sr=None)
-    # s = librosa.logamplitude(librosa.feature.melspectrogram(audio, sr=sample_rate, n_mels=96), ref_power=1.0)
-    # plt.imshow(s)
-    # plt.show()
-    # return s
+def get_specgrams(paths, bands = 60, frames = 61):
+    log_specgrams = []
+    fs = 16000
+    duration = 1
+    for path in paths:
+        wav,s = librosa.load(path)
+        if wav.size < fs:
+            wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
+        else:
+            wav = wav[0:fs * duration]
+        log_specgrams.append(librosa.logamplitude(np.abs(librosa.core.stft(wav, win_length=400, hop_length=160,center=False)), ref_power=np.max))
+        log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
+    return log_specgrams
 
 def get_specgrams(paths, shape, duration=1):
     '''
@@ -53,14 +55,14 @@ def get_specgrams(paths, shape, duration=1):
     wavs = [wavfile.read(x)[1] for x in paths]
     data = []
     for wav in wavs:
-        if wav.size < fs:
-            d = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
+        if wav.size < 16000:
+            d = np.pad(wav, (fs*duration - wav.size, 0), mode='constant')
         else:
-            d = wav[0:fs * duration]
+            d = wav[0:fs*duration]
         data.append(d)
 
-    specgram = [log_specgram(d, fs) for d in data]
-    specgram = [s.reshape(shape[0], shape[1], -1) for s in specgram]
-    # specgram = [signal.spectrogram(d, nperseg=256, noverlap=128)[2] for d in data]
-    # specgram = [s.reshape(129, 124, -1) for s in specgram]
+    # specgram = [log_specgram(d, fs) for d in data]
+    # specgram = [s.reshape(shape[0], shape[1], -1) for s in specgram]
+    specgram = [signal.spectrogram(d, nperseg=256, noverlap=128)[2] for d in data]
+    specgram = [s.reshape(129, 124, -1) for s in specgram]
     return specgram

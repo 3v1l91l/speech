@@ -5,6 +5,7 @@ import numpy as np
 from scipy import signal
 import librosa
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence']
 
@@ -31,14 +32,14 @@ def get_specgrams(paths):
     log_specgrams = []
     fs = 16000
     duration = 1
-    for path in paths:
+    for path in tqdm(paths):
         wav,s = librosa.load(path)
         if wav.size < fs:
             wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
         else:
             wav = wav[0:fs * duration]
         log_specgrams.append(log_spec(wav, fs))
-        log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
+    log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
     return log_specgrams
 
 

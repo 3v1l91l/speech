@@ -10,11 +10,11 @@ datadir = Path('../input/train/audio/off/')
 
 files = [str(f) for f in datadir.glob('**/*.wav') if f]
 
-specs = get_specgrams(files[:1])
+specs = get_specgrams(files)
 
-print(specs[0].shape)
-plt.imshow(specs[0].reshape(specs[0].shape[0], specs[0].shape[1]))
-plt.show()
+# print(specs[0].shape)
+# plt.imshow(specs[0].reshape(specs[0].shape[0], specs[0].shape[1]))
+# plt.show()
 
 
 # n = 0.005/4

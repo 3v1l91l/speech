@@ -168,18 +168,17 @@ def get_model():
     return model
 
 def main():
-    x_train, y_train = get_x_y(True)
+    x_train, y_train = get_x_y(False)
     y_train = label_transform(y_train)
-    # label_index = y_train.columns.values
-    # y_train = np.array(y_train.values)
-    # x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
+    label_index = y_train.columns.values
+    y_train = np.array(y_train.values)
+    x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
 
-    # model = get_model()
-    # model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
-    #                                    verbose=1)
-    # model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
-    #           callbacks=[model_checkpoint])
-
+    model = get_model()
+    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+                                       verbose=1)
+    model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
+              callbacks=[model_checkpoint])
     model = load_model('model.model')
 
     def test_data_generator(batch=16):
@@ -195,7 +194,7 @@ def main():
             resampled = signal.resample(samples, int(new_sample_rate / rate * samples.shape[0]))
             _, _, specgram = log_specgram(resampled, sample_rate=new_sample_rate)
             imgs.append(specgram)
-            fnames.append(path.split('\\')[-1])
+            fnames.append(path.split(r'/')[-1])
             if i == batch:
                 i = 0
                 imgs = np.array(imgs)
@@ -218,7 +217,6 @@ def main():
         predicts = [label_index[p] for p in predicts]
         index.extend(fnames)
         results.extend(predicts)
-
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
     df['label'] = results

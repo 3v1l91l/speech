@@ -17,8 +17,10 @@ from keras.models import load_model
 from tqdm import tqdm
 from multiprocessing import Pool
 import time
+import matplotlib.pyplot as plt
+import pyrubberband as pyrb
+from librosa import effects
 import random
-
 
 L = 16000
 new_sample_rate = 8000
@@ -40,6 +42,7 @@ def get_specgram_labels(zip):
     for samples in n_samples:
         resampled = signal.resample(samples, int(new_sample_rate / sample_rate * samples.shape[0]))
         _, _, specgram = log_specgram(resampled, sample_rate=new_sample_rate)
+
         x.append(specgram)
         y.append(label)
     return (x, y)
@@ -88,21 +91,26 @@ def chop_audio(samples, label, L=16000):
         fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths)-1)]
         sample_rate, noise = wavfile.read(fpath)
         num_augmented = 3
-        linspace = [int(x) for x in np.linspace(0, len(samples), num_augmented)]
+        linspace = [int(x) for x in np.linspace(0, len(samples), num_augmented+1)]
         for i in range(num_augmented):
             beg = np.random.randint(0, len(noise) - L)
-            scale = np.random.uniform(low=0, high=0.3, size=1)
-            noise_sample = noise[beg: beg + L] * scale
-            yield np.concatenate((samples[linspace[i]:], samples[:linspace[i]])) + noise_sample
+            scale = np.random.uniform(low=0, high=0.5, size=1)
+            noise_sample = noise[beg: beg + L]
+            wav = np.concatenate((samples[linspace[i]:], samples[:linspace[i]]))
+            if bool(random.getrandbits(1)):
+                wav = wav * 0.5 + linspace[-1] * 0.5
+            yield (1 - scale) * wav + (noise_sample * scale)
     else:
-        num_augmented = 5
+        num_augmented = 10
         fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
         sample_rate, noise = wavfile.read(fpath)
         for i in range(num_augmented):
-            scale = np.random.uniform(low=0, high=0.3, size=1)
+            scale = np.random.uniform(low=0, high=0.5, size=1)
             beg = np.random.randint(0, len(noise) - L)
-            noise_sample = noise[beg: beg + L] * scale
-            yield samples + noise_sample
+            noise_sample = noise[beg: beg + L]
+            wav = samples
+            yield (1 - scale) * wav + noise_sample * scale
+
 
 def label_transform(labels):
     nlabels = []
@@ -116,7 +124,10 @@ def label_transform(labels):
     return pd.get_dummies(pd.Series(nlabels))
 
 def get_x_y(data_is_loaded=False):
-    if not data_is_loaded:
+    if data_is_loaded:
+        x_train = np.load('./x_train.npy')
+        y_train = np.load('./y_train.npy')
+    else:
         labels, fnames = list_wavs_fname(train_data_path)
 
         print('started')
@@ -134,9 +145,6 @@ def get_x_y(data_is_loaded=False):
         y_train = np.array(y_train)
         # np.save('./x_train', x_train)
         # np.save('./y_train', y_train)
-    else:
-        x_train = np.load('./x_train.npy')
-        y_train = np.load('./y_train.npy')
     return x_train, y_train
 
 def get_model():
@@ -211,7 +219,7 @@ def main():
 
     index = []
     results = []
-    for fnames, imgs in test_data_generator(batch=128):
+    for fnames, imgs in test_data_generator(batch=500):
         predicts = model.predict(imgs)
         predicts = np.argmax(predicts, axis=1)
         predicts = [label_index[p] for p in predicts]

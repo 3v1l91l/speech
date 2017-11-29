@@ -18,25 +18,11 @@ from keras.models import load_model
 # from predictor import predict_all
 from keras.applications.vgg16 import VGG16
 from keras.applications.inception_v3 import InceptionV3
+from generator import batch_generator
 
 train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence']
 labels = train_words + ['unknown']
 shape = (128, 201, 1)
-
-def batch_generator(X, y, batch_size=16):
-    '''
-    Return batcho of random spectrograms and corresponding labels
-    '''
-
-    while True:
-        # choose batch_size random images / labels from the data
-        idx = np.random.randint(0, X.shape[0], batch_size)
-        im = X[idx]
-        label = y[idx]
-
-        specgram = get_specgrams(im)
-        yield np.concatenate([specgram]), label
-
 
 def get_model(shape):
     '''
@@ -93,30 +79,30 @@ def get_model(shape):
     model.add(MaxPooling2D((2, 2), strides=(2, 2)))
     model.add(Dropout(0.25))
 
-    model.add(Conv2D(128, (2, 2)))
-    model.add(Activation('relu'))
     # model.add(Conv2D(128, (2, 2)))
     # model.add(Activation('relu'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-    model.add(Dropout(0.25))
+    # # model.add(Conv2D(128, (2, 2)))
+    # # model.add(Activation('relu'))
+    # model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    # model.add(Dropout(0.25))
 
-    model.add(Conv2D(256, (2, 2)))
-    model.add(Activation('relu'))
-    model.add(Conv2D(256, (2, 2)))
-    model.add(Activation('relu'))
     # model.add(Conv2D(256, (2, 2)))
     # model.add(Activation('relu'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-    model.add(Dropout(0.25))
-
-    model.add(Conv2D(512, (2, 2)))
-    model.add(Activation('relu'))
-    model.add(Conv2D(512, (2, 2)))
-    model.add(Activation('relu'))
+    # model.add(Conv2D(256, (2, 2)))
+    # model.add(Activation('relu'))
+    # # model.add(Conv2D(256, (2, 2)))
+    # # model.add(Activation('relu'))
+    # model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    # model.add(Dropout(0.25))
+    #
     # model.add(Conv2D(512, (2, 2)))
     # model.add(Activation('relu'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-    model.add(Dropout(0.25))
+    # model.add(Conv2D(512, (2, 2)))
+    # model.add(Activation('relu'))
+    # # model.add(Conv2D(512, (2, 2)))
+    # # model.add(Activation('relu'))
+    # model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    # model.add(Dropout(0.25))
 
     model.add(Flatten())
     model.add(Dense(500))
@@ -165,7 +151,7 @@ model.fit_generator(
     validation_steps=Xt.shape[0] // batch_size,
     callbacks=[
         model_checkpoint
-    ])
+    ], workers=4)
 
 model = load_model('model.model')
 

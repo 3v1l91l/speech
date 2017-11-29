@@ -8,48 +8,39 @@ import re
 import pandas as pd
 import gc
 from scipy.io import wavfile
-
 import pickle
-
+from keras import optimizers, losses, activations, models
+from keras.layers import Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool
 import time
-from functools import partial
+import random
+
 
 L = 16000
 new_sample_rate = 8000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
-
-#src folders
 root_path = r'..'
 out_path = r'.'
 model_path = r'.'
 train_data_path = os.path.join(root_path, 'input', 'train', 'audio')
 test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
+background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
 
-def get_specgram_labels(x_y_train, zip):
+
+def get_specgram_labels(zip):
+    x, y = [], []
     label, fname = zip
-    sample_rate, samples = wavfile.read(os.path.join(train_data_path, label, fname))
-    samples = pad_audio(samples)
-    if len(samples) > 16000:
-        n_samples = chop_audio(samples)
-    else:
-        n_samples = [samples]
+    sample_rate, orig_samples = wavfile.read(os.path.join(train_data_path, label, fname))
+    samples = pad_audio(orig_samples)
+    n_samples = chop_audio(samples, label)
     for samples in n_samples:
         resampled = signal.resample(samples, int(new_sample_rate / sample_rate * samples.shape[0]))
         _, _, specgram = log_specgram(resampled, sample_rate=new_sample_rate)
-        x_y_train.append((specgram,label))
-
-def custom_fft(y, fs):
-    T = 1.0 / fs
-    N = y.shape[0]
-    yf = fft(y)
-    xf = np.linspace(0.0, 1.0/(2.0*T), N//2)
-    # FFT is simmetrical, so we take just the first half
-    # FFT is also complex, to we take just the real part (abs)
-    vals = 2.0/N * np.abs(yf[0:N//2])
-    return xf, vals
+        x.append(specgram)
+        y.append(label)
+    return (x, y)
 
 def log_specgram(audio, sample_rate, window_size=20,
                  step_size=10, eps=1e-10):
@@ -66,13 +57,13 @@ def log_specgram(audio, sample_rate, window_size=20,
 def list_wavs_fname(dirpath, ext='wav'):
     print(dirpath)
     fpaths = glob(os.path.join(dirpath, r'*/*' + ext))
-    pat = r'.+\\(\w+)\\.+' + ext + '$'
+    pat = r'.+/(\w+)/.+' + ext + '$'
     labels = []
     for fpath in fpaths:
         r = re.match(pat, fpath)
         if r:
             labels.append(r.group(1))
-    pat = r'.+\\(.+' + ext + ')$'
+    pat = r'.+/(.+' + ext + ')$'
     fnames = []
     for fpath in fpaths:
         r = re.match(pat, fpath)
@@ -84,10 +75,32 @@ def pad_audio(samples):
     if len(samples) >= L: return samples
     else: return np.pad(samples, pad_width=(L - len(samples), 0), mode='constant', constant_values=(0, 0))
 
-def chop_audio(samples, L=16000, num=20):
-    for i in range(num):
-        beg = np.random.randint(0, len(samples) - L)
-        yield samples[beg: beg + L]
+def chop_audio(samples, label, L=16000):
+    if label == '_background_noise_':   # chop noise to be 'silences'
+        num_silences_per_record = 1000
+        for i in range(num_silences_per_record):
+            scale = np.random.uniform(low=0, high=1, size=1)
+            beg = np.random.randint(0, len(samples) - L)
+            yield samples[beg: beg + L] * scale
+    elif label not in legal_labels:     # augment unknowns
+        fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths)-1)]
+        sample_rate, noise = wavfile.read(fpath)
+        num_augmented = 4
+        linspace = [int(x) for x in np.linspace(0, len(samples), num_augmented)]
+        for i in range(num_augmented):
+            beg = np.random.randint(0, len(noise) - L)
+            scale = np.random.uniform(low=0, high=0.3, size=1)
+            noise_sample = noise[beg: beg + L] * scale
+            yield np.concatenate((samples[linspace[i]:], samples[:linspace[i]])) + noise_sample
+    else:
+        num_augmented = 10
+        fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
+        sample_rate, noise = wavfile.read(fpath)
+        for i in range(num_augmented):
+            scale = np.random.uniform(low=0, high=0.3, size=1)
+            beg = np.random.randint(0, len(noise) - L)
+            noise_sample = noise[beg: beg + L] * scale
+            yield samples + noise_sample
 
 def label_transform(labels):
     nlabels = []
@@ -100,34 +113,35 @@ def label_transform(labels):
             nlabels.append(label)
     return pd.get_dummies(pd.Series(nlabels))
 
+def get_x_y(data_is_loaded=False):
+    if not data_is_loaded:
+        labels, fnames = list_wavs_fname(train_data_path)
+
+        print('started')
+        start = time.time()
+        x_train, y_train = [], []
+        with Pool() as p:
+            for a, b in p.map(get_specgram_labels, zip(labels, fnames)):
+                x_train.extend(a)
+                y_train.extend(b)
+
+        end = time.time()
+        print('Executed in: {}'.format(end - start))
+        x_train = np.array(x_train)
+        x_train = x_train.reshape(tuple(list(x_train.shape) + [1]))
+        y_train = np.array(y_train)
+        np.save('./x_train', x_train)
+        np.save('./y_train', y_train)
+    else:
+        x_train = np.load('./x_train.npy')
+        y_train = np.load('./y_train.npy')
+    return x_train, y_train
+
 def main():
-    from keras import optimizers, losses, activations, models
-    from keras.layers import Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization
-    labels, fnames = list_wavs_fname(train_data_path)
-
-    # y_train = []
-    # x_train = []
-
-
-    start = time.time()
-    manager = Manager()
-    x_y_train = manager.list()
-    p = Pool()
-    print('started')
-    func = partial(get_specgram_labels, x_y_train)
-    p.map(func, zip(labels, fnames))
-    end = time.time()
-    print('Executed in: {}'.format(end-start))
-    x_train, y_train = zip(*x_y_train)
-    del x_y_train
-    x_train = np.array(x_train)
-    x_train = x_train.reshape(tuple(list(x_train.shape) + [1]))
+    x_train, y_train = get_x_y(False)
     y_train = label_transform(y_train)
     label_index = y_train.columns.values
-    y_train = y_train.values
-    y_train = np.array(y_train)
-    del labels, fnames
-    gc.collect()
+    y_train = np.array(y_train.values)
 
     input_shape = (99, 81, 1)
     nclass = 12

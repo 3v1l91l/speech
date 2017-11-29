@@ -11,6 +11,7 @@ from scipy.io import wavfile
 import pickle
 from keras import optimizers, losses, activations, models
 from keras.layers import Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization
+from keras.callbacks import ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -130,19 +131,14 @@ def get_x_y(data_is_loaded=False):
         x_train = np.array(x_train)
         x_train = x_train.reshape(tuple(list(x_train.shape) + [1]))
         y_train = np.array(y_train)
-        np.save('./x_train', x_train)
-        np.save('./y_train', y_train)
+        # np.save('./x_train', x_train)
+        # np.save('./y_train', y_train)
     else:
         x_train = np.load('./x_train.npy')
         y_train = np.load('./y_train.npy')
     return x_train, y_train
 
-def main():
-    x_train, y_train = get_x_y(False)
-    y_train = label_transform(y_train)
-    label_index = y_train.columns.values
-    y_train = np.array(y_train.values)
-
+def get_model():
     input_shape = (99, 81, 1)
     nclass = 12
     inp = Input(shape=input_shape)
@@ -168,12 +164,22 @@ def main():
     opt = optimizers.Adam()
 
     model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['accuracy'])
-    model.summary()
+    return model
 
+def main():
+    x_train, y_train = get_x_y(False)
+    y_train = label_transform(y_train)
+    label_index = y_train.columns.values
+    y_train = np.array(y_train.values)
+
+    model = get_model()
     x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
-    model.fit(x_train, y_train, batch_size=16, validation_data=(x_valid, y_valid), epochs=3, shuffle=True, verbose=1)
+    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+                                       verbose=1)
+    model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
+              callbacks=[model_checkpoint])
 
-    model.save(os.path.join(model_path, 'cnn.model'))
+    model.load('model.model')
 
     def test_data_generator(batch=16):
         fpaths = glob(os.path.join(test_data_path, '*wav'))

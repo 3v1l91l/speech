@@ -13,6 +13,7 @@ from keras import optimizers, losses, activations, models
 from keras.layers import Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization
 from keras.callbacks import ModelCheckpoint
 from sklearn.model_selection import train_test_split
+from keras.models import load_model
 from tqdm import tqdm
 from multiprocessing import Pool
 import time
@@ -78,7 +79,7 @@ def pad_audio(samples):
 
 def chop_audio(samples, label, L=16000):
     if label == '_background_noise_':   # chop noise to be 'silences'
-        num_silences_per_record = 1000
+        num_silences_per_record = 500
         for i in range(num_silences_per_record):
             scale = np.random.uniform(low=0, high=1, size=1)
             beg = np.random.randint(0, len(samples) - L)
@@ -86,7 +87,7 @@ def chop_audio(samples, label, L=16000):
     elif label not in legal_labels:     # augment unknowns
         fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths)-1)]
         sample_rate, noise = wavfile.read(fpath)
-        num_augmented = 4
+        num_augmented = 3
         linspace = [int(x) for x in np.linspace(0, len(samples), num_augmented)]
         for i in range(num_augmented):
             beg = np.random.randint(0, len(noise) - L)
@@ -94,7 +95,7 @@ def chop_audio(samples, label, L=16000):
             noise_sample = noise[beg: beg + L] * scale
             yield np.concatenate((samples[linspace[i]:], samples[:linspace[i]])) + noise_sample
     else:
-        num_augmented = 10
+        num_augmented = 5
         fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
         sample_rate, noise = wavfile.read(fpath)
         for i in range(num_augmented):
@@ -167,19 +168,19 @@ def get_model():
     return model
 
 def main():
-    x_train, y_train = get_x_y(False)
+    x_train, y_train = get_x_y(True)
     y_train = label_transform(y_train)
-    label_index = y_train.columns.values
-    y_train = np.array(y_train.values)
+    # label_index = y_train.columns.values
+    # y_train = np.array(y_train.values)
+    # x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
 
-    model = get_model()
-    x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
-    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
-                                       verbose=1)
-    model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
-              callbacks=[model_checkpoint])
+    # model = get_model()
+    # model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+    #                                    verbose=1)
+    # model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
+    #           callbacks=[model_checkpoint])
 
-    model.load('model.model')
+    model = load_model('model.model')
 
     def test_data_generator(batch=16):
         fpaths = glob(os.path.join(test_data_path, '*wav'))
@@ -211,7 +212,7 @@ def main():
 
     index = []
     results = []
-    for fnames, imgs in test_data_generator(batch=32):
+    for fnames, imgs in test_data_generator(batch=128):
         predicts = model.predict(imgs)
         predicts = np.argmax(predicts, axis=1)
         predicts = [label_index[p] for p in predicts]

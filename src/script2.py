@@ -150,7 +150,9 @@ def get_x_y(data_is_loaded=False):
     return x_train, y_train
 
 def get_model():
-    input_shape = (99, 81, 1)
+    # input_shape = (99, 81, 1)
+    input_shape = (99, 161, 1)
+
     nclass = 12
     inp = Input(shape=input_shape)
     norm_inp = BatchNormalization()(inp)
@@ -209,7 +211,7 @@ def main():
         validation_steps=len(y_valid) // batch_size,
         callbacks=[
             model_checkpoint
-        ], workers=4)
+        ], workers=4, verbose=1)
 
 
     # model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,

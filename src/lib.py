@@ -33,13 +33,13 @@ def get_specgrams(paths):
     log_specgrams = [None] * len_paths
     fs = 16000
     duration = 1
-    for p in tqdm(range(len_paths)):
+    for p in range(len_paths):
         wav, s = librosa.load(paths[p])
         if wav.size < fs:
             wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
         else:
             wav = wav[0:fs * duration]
-        log_specgrams[p] = log_melspectrogram(wav, fs)[..., np.newaxis]
+        log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
         # log_specgrams[p] = spectrogram(wav, fs)[..., np.newaxis]
 
     # log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
@@ -66,4 +66,4 @@ def log_specgram(audio, sample_rate=16000, window_size=20,
                                     nperseg=nperseg,
                                     noverlap=noverlap,
                                     detrend=False)
-    return freqs, times, np.log(spec.T.astype(np.float32) + eps)
+    return np.log(spec.T.astype(np.float32) + eps)

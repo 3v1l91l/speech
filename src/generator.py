@@ -1,5 +1,5 @@
 import numpy as np
-from lib import log_specgram
+from lib import get_specgrams
 import threading
 
 class threadsafe_iter:
@@ -35,5 +35,5 @@ def batch_generator(X, y, batch_size=16):
         im = X[idx]
         label = y[idx]
 
-        specgram = log_specgram(im)
+        specgram = get_specgrams(im)
         yield np.concatenate([specgram]), label

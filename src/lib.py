@@ -56,9 +56,7 @@ def get_specgrams_augment_known(paths, silences, unknowns):
             wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
         else:
             wav = wav[0:fs * duration]
-        noise = silences[np.random.randint(0, len(silences), 1)]
-        beg = np.random.randint(0, len(noise) - fs)
-        noise = noise[beg: beg + fs]
+        noise = silences[int(np.random.randint(0, len(silences), 1))]
         scale = np.random.uniform(low=0, high=0.6, size=1)
         wav = (1 - scale) * wav + (noise * scale)
         log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
@@ -74,13 +72,11 @@ def get_specgrams_augment_unknown(paths, silences, unknowns):
         wav = pad(wav, fs, 1)
 
         for x in np.random.randint(0, fs, 4):
-            unknown_overlap = unknowns[np.random.randint(0, len(unknowns), 1)]
-            unknown_overlap = pad(unknown_overlap)
-            wav = (1 - 0.5) * wav + (unknown_overlap * 0.5)
+            unknown_overlap = unknowns[int(np.random.randint(0, len(unknowns), 1))]
+            unknown_overlap = pad(unknown_overlap, fs, duration)
+            wav = (1 - 0.5) * wav + (np.concatenate((unknown_overlap[x:],unknown_overlap[:x])) * 0.5)
 
-        noise = silences[np.random.randint(0, len(silences), 1)]
-        beg = np.random.randint(0, len(noise) - fs)
-        noise = noise[beg: beg + fs]
+        noise = silences[int(np.random.randint(0, len(silences), 1))]
         scale = np.random.uniform(low=0, high=0.6, size=1)
         wav = (1 - scale) * wav + (noise * scale)
         log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
@@ -91,6 +87,7 @@ def pad(wav, fs, duration):
         wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
     else:
         wav = wav[0:fs * duration]
+    return wav
 
 def log_melspectrogram(wav, fs):
     windows_samples = int(fs / 40)

@@ -271,7 +271,7 @@ def main():
 
     model.fit_generator(
         generator=train_gen,
-        epochs=1,
+        epochs=5,
         steps_per_epoch=len(y_train) // batch_size,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // batch_size,

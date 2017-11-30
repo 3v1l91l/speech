@@ -45,7 +45,7 @@ def get_specgrams(paths):
     # log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
     return log_specgrams
 
-def get_specgrams_augment(paths):
+def get_specgrams_augment_known(paths, silences, unknowns):
     len_paths = len(paths)
     log_specgrams = [None] * len_paths
     fs = 16000
@@ -56,11 +56,41 @@ def get_specgrams_augment(paths):
             wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
         else:
             wav = wav[0:fs * duration]
+        noise = silences[np.random.randint(0, len(silences), 1)]
+        beg = np.random.randint(0, len(noise) - fs)
+        noise = noise[beg: beg + fs]
+        scale = np.random.uniform(low=0, high=0.6, size=1)
+        wav = (1 - scale) * wav + (noise * scale)
         log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
-        # log_specgrams[p] = spectrogram(wav, fs)[..., np.newaxis]
-
-    # log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
     return log_specgrams
+
+def get_specgrams_augment_unknown(paths, silences, unknowns):
+    len_paths = len(paths)
+    log_specgrams = [None] * len_paths
+    fs = 16000
+    duration = 1
+    for p in range(len_paths):
+        wav, s = librosa.load(paths[p])
+        wav = pad(wav, fs, 1)
+
+        for x in np.random.randint(0, fs, 4):
+            unknown_overlap = unknowns[np.random.randint(0, len(unknowns), 1)]
+            unknown_overlap = pad(unknown_overlap)
+            wav = (1 - 0.5) * wav + (unknown_overlap * 0.5)
+
+        noise = silences[np.random.randint(0, len(silences), 1)]
+        beg = np.random.randint(0, len(noise) - fs)
+        noise = noise[beg: beg + fs]
+        scale = np.random.uniform(low=0, high=0.6, size=1)
+        wav = (1 - scale) * wav + (noise * scale)
+        log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
+    return log_specgrams
+
+def pad(wav, fs, duration):
+    if wav.size < fs:
+        wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
+    else:
+        wav = wav[0:fs * duration]
 
 def log_melspectrogram(wav, fs):
     windows_samples = int(fs / 40)

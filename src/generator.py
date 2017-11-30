@@ -36,4 +36,4 @@ def batch_generator(X, y, batch_size=16):
         label = y[idx]
 
         specgram = get_specgrams(im)
-        yield np.concatenate([specgram]), label
+        yield specgram, label

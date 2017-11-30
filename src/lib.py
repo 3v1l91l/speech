@@ -45,6 +45,22 @@ def get_specgrams(paths):
     # log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
     return log_specgrams
 
+def get_specgrams_augment(paths):
+    len_paths = len(paths)
+    log_specgrams = [None] * len_paths
+    fs = 16000
+    duration = 1
+    for p in range(len_paths):
+        wav, s = librosa.load(paths[p])
+        if wav.size < fs:
+            wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
+        else:
+            wav = wav[0:fs * duration]
+        log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
+        # log_specgrams[p] = spectrogram(wav, fs)[..., np.newaxis]
+
+    # log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
+    return log_specgrams
 
 def log_melspectrogram(wav, fs):
     windows_samples = int(fs / 40)

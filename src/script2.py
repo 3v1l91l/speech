@@ -18,14 +18,11 @@ from tqdm import tqdm
 from multiprocessing import Pool
 import time
 import matplotlib.pyplot as plt
-import pyrubberband as pyrb
-from librosa import effects
 import random
-from generator import batch_generator
-from lib import get_path_label_df, prepare_data
+# from generator import batch_generator
+from lib import get_path_label_df, prepare_data, log_specgram, get_specgrams, get_specgrams_augment
 
 L = 16000
-new_sample_rate = 8000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 root_path = r'..'
 out_path = r'.'
@@ -33,7 +30,66 @@ model_path = r'.'
 train_data_path = os.path.join(root_path, 'input', 'train', 'audio')
 test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
 background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
+new_sample_rate = 8000
 
+import threading
+
+class threadsafe_iter:
+    """Takes an iterator/generator and makes it thread-safe by
+    serializing call to the `next` method of given iterator/generator.
+    """
+    def __init__(self, it):
+        self.it = it
+        self.lock = threading.Lock()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):  # Py3
+        with self.lock:
+            return next(self.it)
+
+def threadsafe_generator(f):
+    """A decorator that takes a generator function and makes it thread-safe.
+    """
+    def g(*a, **kw):
+        return threadsafe_iter(f(*a, **kw))
+    return g
+
+@threadsafe_generator
+def batch_generator(X, y, y_label, batch_size=16):
+    '''
+    Return batch of random spectrograms and corresponding labels
+    '''
+
+    while True:
+        idx = np.random.randint(0, X.shape[0], batch_size)
+        im = X[idx]
+        label = y[idx]
+        cur_legal_labels = [not x == 'unknown' for x in y_label[idx]]
+        cur_not_legal_labels = [not x for x in cur_legal_labels]
+        if any(cur_not_legal_labels):  # augment unknowns
+            im[np.where(cur_not_legal_labels)] = get_specgrams_augment(im[cur_not_legal_labels])
+            # fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
+            # sample_rate, noise = wavfile.read(fpath)
+            # beg = np.random.randint(0, len(noise) - L)
+            # scale = np.random.uniform(low=0, high=0.5, size=1)
+            # noise_sample = noise[beg: beg + L]
+            # wav = im[i]
+            # im[i] = (1 - scale) * wav + (noise_sample * scale)
+
+        if any(cur_legal_labels):
+            im[np.where(cur_legal_labels)] = get_specgrams_augment(im[cur_legal_labels])
+            # fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
+            # sample_rate, noise = wavfile.read(fpath)
+            # beg = np.random.randint(0, len(noise) - L)
+            # scale = np.random.uniform(low=0, high=0.5, size=1)
+            # noise_sample = noise[beg: beg + L]
+            # wav = im[i]
+            # im[i] = (1 - scale) * wav + (noise_sample * scale)
+            # specgram = get_specgrams_augment(im)
+
+        yield np.stack(im), label
 
 def get_specgram_labels(zip):
     x, y = [], []
@@ -43,23 +99,11 @@ def get_specgram_labels(zip):
     n_samples = chop_audio(samples, label)
     for samples in n_samples:
         resampled = signal.resample(samples, int(new_sample_rate / sample_rate * samples.shape[0]))
-        _, _, specgram = log_specgram(resampled, sample_rate=new_sample_rate)
+        specgram = log_specgram(resampled, sample_rate=new_sample_rate)
 
         x.append(specgram)
         y.append(label)
     return (x, y)
-
-def log_specgram(audio, sample_rate, window_size=20,
-                 step_size=10, eps=1e-10):
-    nperseg = int(round(window_size * sample_rate / 1e3))
-    noverlap = int(round(step_size * sample_rate / 1e3))
-    freqs, times, spec = signal.spectrogram(audio,
-                                    fs=sample_rate,
-                                    window='hann',
-                                    nperseg=nperseg,
-                                    noverlap=noverlap,
-                                    detrend=False)
-    return freqs, times, np.log(spec.T.astype(np.float32) + eps)
 
 def list_wavs_fname(dirpath, ext='wav'):
     print(dirpath)
@@ -200,8 +244,8 @@ def main():
                                        verbose=1)
 
     batch_size = 128
-    train_gen = batch_generator(train.path.values, y_train, batch_size=batch_size)
-    valid_gen = batch_generator(valid.path.values, y_valid, batch_size=batch_size)
+    train_gen = batch_generator(train.path.values, y_train, train.word.values, batch_size=batch_size)
+    valid_gen = batch_generator(valid.path.values, y_valid, valid.word.values, batch_size=batch_size)
 
     model.fit_generator(
         generator=train_gen,
@@ -213,51 +257,48 @@ def main():
             model_checkpoint
         ], workers=4, verbose=1)
 
+    del train, valid, y_train, y_valid
+    gc.collect()
 
-    # model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
-    #           callbacks=[model_checkpoint])
-    # model = load_model('model.model')
-    #
-    # def test_data_generator(batch=16):
-    #     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    #     i = 0
-    #     for path in fpaths:
-    #         if i == 0:
-    #             imgs = []
-    #             fnames = []
-    #         i += 1
-    #         rate, samples = wavfile.read(path)
-    #         samples = pad_audio(samples)
-    #         resampled = signal.resample(samples, int(new_sample_rate / rate * samples.shape[0]))
-    #         _, _, specgram = log_specgram(resampled, sample_rate=new_sample_rate)
-    #         imgs.append(specgram)
-    #         fnames.append(path.split(r'/')[-1])
-    #         if i == batch:
-    #             i = 0
-    #             imgs = np.array(imgs)
-    #             imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
-    #             yield fnames, imgs
-    #     if i < batch:
-    #         imgs = np.array(imgs)
-    #         imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
-    #         yield fnames, imgs
-    #     raise StopIteration()
-    #
-    # del x_train, y_train
-    # gc.collect()
-    #
-    # index = []
-    # results = []
-    # for fnames, imgs in test_data_generator(batch=500):
-    #     predicts = model.predict(imgs)
-    #     predicts = np.argmax(predicts, axis=1)
-    #     predicts = [label_index[p] for p in predicts]
-    #     index.extend(fnames)
-    #     results.extend(predicts)
-    # df = pd.DataFrame(columns=['fname', 'label'])
-    # df['fname'] = index
-    # df['label'] = results
-    # df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+    model = load_model('model.model')
+
+    def test_data_generator(batch=16):
+        fpaths = glob(os.path.join(test_data_path, '*wav'))
+        i = 0
+        for path in fpaths:
+            if i == 0:
+                imgs = []
+                fnames = []
+            i += 1
+            rate, samples = wavfile.read(path)
+            samples = pad_audio(samples)
+            # resampled = signal.resample(samples, int(new_sample_rate / rate * samples.shape[0]))
+            specgram = log_specgram(samples)
+            imgs.append(specgram)
+            fnames.append(path.split(r'/')[-1])
+            if i == batch:
+                i = 0
+                imgs = np.array(imgs)
+                imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
+                yield fnames, imgs
+        if i < batch:
+            imgs = np.array(imgs)
+            imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
+            yield fnames, imgs
+        raise StopIteration()
+
+    index = []
+    results = []
+    for fnames, imgs in test_data_generator(batch=500):
+        predicts = model.predict(imgs)
+        predicts = np.argmax(predicts, axis=1)
+        predicts = [label_index[p] for p in predicts]
+        index.extend(fnames)
+        results.extend(predicts)
+    df = pd.DataFrame(columns=['fname', 'label'])
+    df['fname'] = index
+    df['label'] = results
+    df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 if __name__ == "__main__":
     main()

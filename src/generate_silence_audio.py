@@ -4,7 +4,9 @@ import numpy as np
 import os
 
 audio_dir = '../input/train/audio/'
-silence_audio_dir = os.path.join(audio_dir, 'silence')
+# silence_audio_dir = os.path.join(audio_dir, 'silence')
+silence_audio_dir = os.path.join('..','input','train', 'valid','silence')
+
 if not os.path.exists(silence_audio_dir):
     os.makedirs(silence_audio_dir)
 

@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 import pyrubberband as pyrb
 from librosa import effects
 import random
+from generator import batch_generator
+from lib import get_path_label_df, prepare_data
 
 L = 16000
 new_sample_rate = 8000
@@ -176,59 +178,84 @@ def get_model():
     return model
 
 def main():
-    x_train, y_train = get_x_y(False)
-    y_train = label_transform(y_train)
+    # x_train, y_train = get_x_y(False)
+    # y_train = label_transform(y_train)
+
+    train = prepare_data(get_path_label_df('../input/train/audio/'))
+    valid = prepare_data(get_path_label_df('../input/train/valid/'))
+
+
+    len_train = len(train.word.values)
+    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
+    y_train, y_valid = temp[:len_train], temp[len_train:]
+
     label_index = y_train.columns.values
     y_train = np.array(y_train.values)
-    x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
+    y_valid = np.array(y_valid.values)
 
     model = get_model()
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
-    model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
-              callbacks=[model_checkpoint])
-    model = load_model('model.model')
 
-    def test_data_generator(batch=16):
-        fpaths = glob(os.path.join(test_data_path, '*wav'))
-        i = 0
-        for path in fpaths:
-            if i == 0:
-                imgs = []
-                fnames = []
-            i += 1
-            rate, samples = wavfile.read(path)
-            samples = pad_audio(samples)
-            resampled = signal.resample(samples, int(new_sample_rate / rate * samples.shape[0]))
-            _, _, specgram = log_specgram(resampled, sample_rate=new_sample_rate)
-            imgs.append(specgram)
-            fnames.append(path.split(r'/')[-1])
-            if i == batch:
-                i = 0
-                imgs = np.array(imgs)
-                imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
-                yield fnames, imgs
-        if i < batch:
-            imgs = np.array(imgs)
-            imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
-            yield fnames, imgs
-        raise StopIteration()
+    batch_size = 128
+    train_gen = batch_generator(train.path.values, y_train, batch_size=batch_size)
+    valid_gen = batch_generator(valid.path.values, y_valid, batch_size=batch_size)
 
-    del x_train, y_train
-    gc.collect()
+    model.fit_generator(
+        generator=train_gen,
+        epochs=1,
+        steps_per_epoch=len(y_train) // batch_size,
+        validation_data=valid_gen,
+        validation_steps=len(y_valid) // batch_size,
+        callbacks=[
+            model_checkpoint
+        ], workers=4)
 
-    index = []
-    results = []
-    for fnames, imgs in test_data_generator(batch=500):
-        predicts = model.predict(imgs)
-        predicts = np.argmax(predicts, axis=1)
-        predicts = [label_index[p] for p in predicts]
-        index.extend(fnames)
-        results.extend(predicts)
-    df = pd.DataFrame(columns=['fname', 'label'])
-    df['fname'] = index
-    df['label'] = results
-    df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+
+    # model.fit(x_train, y_train, batch_size=128, validation_data=(x_valid, y_valid), epochs=5, shuffle=True, verbose=1,
+    #           callbacks=[model_checkpoint])
+    # model = load_model('model.model')
+    #
+    # def test_data_generator(batch=16):
+    #     fpaths = glob(os.path.join(test_data_path, '*wav'))
+    #     i = 0
+    #     for path in fpaths:
+    #         if i == 0:
+    #             imgs = []
+    #             fnames = []
+    #         i += 1
+    #         rate, samples = wavfile.read(path)
+    #         samples = pad_audio(samples)
+    #         resampled = signal.resample(samples, int(new_sample_rate / rate * samples.shape[0]))
+    #         _, _, specgram = log_specgram(resampled, sample_rate=new_sample_rate)
+    #         imgs.append(specgram)
+    #         fnames.append(path.split(r'/')[-1])
+    #         if i == batch:
+    #             i = 0
+    #             imgs = np.array(imgs)
+    #             imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
+    #             yield fnames, imgs
+    #     if i < batch:
+    #         imgs = np.array(imgs)
+    #         imgs = imgs.reshape(tuple(list(imgs.shape) + [1]))
+    #         yield fnames, imgs
+    #     raise StopIteration()
+    #
+    # del x_train, y_train
+    # gc.collect()
+    #
+    # index = []
+    # results = []
+    # for fnames, imgs in test_data_generator(batch=500):
+    #     predicts = model.predict(imgs)
+    #     predicts = np.argmax(predicts, axis=1)
+    #     predicts = [label_index[p] for p in predicts]
+    #     index.extend(fnames)
+    #     results.extend(predicts)
+    # df = pd.DataFrame(columns=['fname', 'label'])
+    # df['fname'] = index
+    # df['label'] = results
+    # df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 if __name__ == "__main__":
     main()

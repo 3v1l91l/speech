@@ -20,7 +20,8 @@ import time
 import matplotlib.pyplot as plt
 import random
 # from generator import batch_generator
-from lib import get_path_label_df, prepare_data, log_specgram, get_specgrams, get_specgrams_augment
+from lib import get_path_label_df, prepare_data, log_specgram, get_specgrams, get_specgrams_augment_unknown, get_specgrams_augment_known
+import librosa
 
 L = 16000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
@@ -30,6 +31,7 @@ model_path = r'.'
 train_data_path = os.path.join(root_path, 'input', 'train', 'audio')
 test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
 background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
+silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 new_sample_rate = 8000
 
 import threading
@@ -57,7 +59,7 @@ def threadsafe_generator(f):
     return g
 
 @threadsafe_generator
-def batch_generator(X, y, y_label, batch_size=16):
+def batch_generator(X, y, y_label, silences, unknowns, batch_size=16):
     '''
     Return batch of random spectrograms and corresponding labels
     '''
@@ -69,7 +71,7 @@ def batch_generator(X, y, y_label, batch_size=16):
         cur_legal_labels = [not x == 'unknown' for x in y_label[idx]]
         cur_not_legal_labels = [not x for x in cur_legal_labels]
         if any(cur_not_legal_labels):  # augment unknowns
-            im[np.where(cur_not_legal_labels)] = get_specgrams_augment(im[cur_not_legal_labels])
+            im[np.where(cur_not_legal_labels)] = get_specgrams_augment_unknown(im[cur_not_legal_labels], silences, unknowns)
             # fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
             # sample_rate, noise = wavfile.read(fpath)
             # beg = np.random.randint(0, len(noise) - L)
@@ -79,7 +81,7 @@ def batch_generator(X, y, y_label, batch_size=16):
             # im[i] = (1 - scale) * wav + (noise_sample * scale)
 
         if any(cur_legal_labels):
-            im[np.where(cur_legal_labels)] = get_specgrams_augment(im[cur_legal_labels])
+            im[np.where(cur_legal_labels)] = get_specgrams_augment_known(im[cur_legal_labels], silences, unknowns)
             # fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
             # sample_rate, noise = wavfile.read(fpath)
             # beg = np.random.randint(0, len(noise) - L)
@@ -243,9 +245,29 @@ def main():
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
 
+    silences = []
+    silence_paths = train.path[train.word == 'silence']
+    for p in silence_paths.iloc[np.random.randint(0,len(silence_paths), 100)]:
+        wav, s = librosa.load(p)
+        if wav.size < L:
+            wav = np.pad(wav, (L - wav.size, 0), mode='constant')
+        else:
+            wav = wav[0:L]
+        silences.append(wav)
+
+    unknowns = []
+    unknown_paths = train.path[train.word == 'unknown']
+    for p in unknown_paths.iloc[np.random.randint(0,len(unknown_paths), 100)]:
+        wav, s = librosa.load(p)
+        if wav.size < L:
+            wav = np.pad(wav, (L - wav.size, 0), mode='constant')
+        else:
+            wav = wav[0:L]
+        unknowns.append(wav)
+
     batch_size = 128
-    train_gen = batch_generator(train.path.values, y_train, train.word.values, batch_size=batch_size)
-    valid_gen = batch_generator(valid.path.values, y_valid, valid.word.values, batch_size=batch_size)
+    train_gen = batch_generator(train.path.values, y_train, train.word.values, silences, unknowns, batch_size=batch_size)
+    valid_gen = batch_generator(valid.path.values, y_valid, valid.word.values, silences, unknowns, batch_size=batch_size)
 
     model.fit_generator(
         generator=train_gen,

@@ -6,8 +6,20 @@ from scipy import signal
 import librosa
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from glob import glob
+import os
+import math
 
-train_words = ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go', 'silence']
+L = 16000
+root_path = r'..'
+out_path = r'.'
+model_path = r'.'
+train_data_path = os.path.join(root_path, 'input', 'train', 'audio')
+test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
+background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
+silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
+
+legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 
 def get_path_label_df(path, pattern='**/*.wav'):
     ''' Returns dataframe with columns: 'path', 'word'.'''
@@ -22,9 +34,9 @@ def prepare_data(df):
     Remove _background_noise_ and replace not trained labels with unknown.
     '''
     words = df.word.unique().tolist()
-    unknown = [w for w in words if w not in train_words]
+    unknown = [w for w in words if w not in legal_labels]
     df = df.drop(df[df.word.isin(['_background_noise_'])].index)
-    df.reset_index()
+    df.reset_index(inplace=True)
     df.loc[df.word.isin(unknown), 'word'] = 'unknown'
     return df
 
@@ -92,3 +104,21 @@ def log_specgram(audio, sample_rate=16000, window_size=20,
                                     noverlap=noverlap,
                                     detrend=False)
     return np.log(spec.T.astype(np.float32) + eps)
+
+def label_transform(labels):
+    nlabels = []
+    for label in labels:
+        if label not in legal_labels:
+            nlabels.append('unknown')
+        else:
+            nlabels.append(label)
+    return pd.get_dummies(pd.Series(nlabels))
+
+def load_wav_by_path(p):
+    _, wav = wavfile.read(p)
+    if wav.size < L:
+        wav = np.pad(wav, (L - wav.size, 0), mode='constant')
+    else:
+        wav = wav[0:L]
+    return wav
+

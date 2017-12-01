@@ -36,8 +36,6 @@ def batch_generator(should_augment, X, y, y_label, silences, unknowns, batch_siz
         known_ix = np.random.choice(y_label[(y_label != 'unknown') & (y_label != 'silence')].index, size=batch_size_known)
         specgrams = []
         res_labels = []
-        if any(unknown_ix > len(X)):
-            print('err')
         if should_augment:
             specgrams.extend(get_specgrams_augment_unknown(X[unknown_ix], silences, unknowns))
         else:

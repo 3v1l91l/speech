@@ -64,12 +64,12 @@ def main():
     len_valid = len(valid.word.values)
     temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
     y_train, y_valid = temp[:len_train], temp[len_train:]
-    y_valid.reset_index()
 
     label_index = y_train.columns.values
     y_train = np.array(y_train.values)
     y_valid = np.array(y_valid.values)
 
+    # model = load_model('model.model')
 
     model = get_model()
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
@@ -78,11 +78,11 @@ def main():
     start = time.time()
     pool = Pool()
     silence_paths = train.path[train.word == 'silence']
-    rand_silence_paths = silence_paths.iloc[np.random.randint(0,len(silence_paths), 100)]
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0,len(silence_paths), 50)]
     silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
 
     unknown_paths = train.path[train.word == 'unknown']
-    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0,len(unknown_paths), 100)]
+    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0,len(unknown_paths), 50)]
     unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
 
     train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
@@ -96,20 +96,20 @@ def main():
 
     model.fit_generator(
         generator=train_gen,
-        epochs=5,
+        epochs=1,
         steps_per_epoch=len_train // batch_size,
         validation_data=valid_gen,
         validation_steps=len_valid // batch_size,
         callbacks=[
             model_checkpoint
-        ], workers=1, use_multiprocessing=False, verbose=1, max_queue_size=1)
+        ], workers=8, use_multiprocessing=False, verbose=1, max_queue_size=1)
 
     del train, valid, y_train, y_valid
     gc.collect()
 
-    model = load_model('model.model')
-    # validate_on_train(model, label_index)
-
+    # model = load_model('model.model')
+    # # validate_on_train(model, label_index)
+    #
     # lp = LineProfiler()
     # lp_wrapper = lp(get_predicts)
     # index, results = lp_wrapper(model, label_index)

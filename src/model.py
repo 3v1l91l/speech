@@ -2,7 +2,9 @@ from keras import optimizers, losses, activations, models
 from keras.layers import Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization
 
 def get_model():
-    input_shape = (99, 161, 1)
+    # input_shape = (99, 161, 1)
+    input_shape = (101, 40, 1)
+
     nclass = 12
     inp = Input(shape=input_shape)
     norm_inp = BatchNormalization()(inp)

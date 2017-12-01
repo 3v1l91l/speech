@@ -9,6 +9,7 @@ from tqdm import tqdm
 from glob import glob
 import os
 import math
+import random
 
 L = 16000
 root_path = r'..'
@@ -53,8 +54,8 @@ def get_specgrams_augment_known(wavs, silences, unknowns):
     fs = 16000
     for i in range(len(wavs)):
         wav = wavs[i]
-        noise = silences[int(np.random.randint(0, len(silences), 1))]
-        scale = np.random.uniform(low=0, high=0.6, size=1)
+        noise = silences[random.randint(0, len(silences)-1)]
+        scale = np.random.uniform(low=0, high=0.3, size=1)
         wav = (1 - scale) * wav + (noise * scale)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
@@ -67,11 +68,11 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
     for i in range(len(wavs)):
         wav = wavs[i]
         for x in np.random.randint(0, fs, 4):
-            unknown_overlap = unknowns[int(np.random.randint(0, len(unknowns), 1))]
+            unknown_overlap = unknowns[random.randint(0, len(unknowns)-1)]
             unknown_overlap = pad(unknown_overlap, fs, duration)
             wav = (1 - 0.5) * wav + (np.concatenate((unknown_overlap[x:],unknown_overlap[:x])) * 0.5)
-        noise = silences[int(np.random.randint(0, len(silences), 1))]
-        scale = np.random.uniform(low=0, high=0.6, size=1)
+        noise = silences[random.randint(0, len(silences)-1)]
+        scale = np.random.uniform(low=0, high=0.3, size=1)
         wav = (1 - scale) * wav + (noise * scale)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
@@ -93,17 +94,24 @@ def log_melspectrogram(wav, fs):
 def spectrogram(wav, fs):
     return signal.spectrogram(wav, fs=fs, nperseg=256, noverlap=128)[2]
 
-def log_specgram(audio, sample_rate=16000, window_size=20,
-                 step_size=10, eps=1e-10):
-    nperseg = int(round(window_size * sample_rate / 1e3))
-    noverlap = int(round(step_size * sample_rate / 1e3))
-    freqs, times, spec = signal.spectrogram(audio,
-                                    fs=sample_rate,
-                                    window='hann',
-                                    nperseg=nperseg,
-                                    noverlap=noverlap,
-                                    detrend=False)
-    return np.log(spec.T.astype(np.float32) + eps)
+# def log_specgram(audio, sample_rate=16000, window_size=20,
+#                  step_size=10, eps=1e-10):
+#     nperseg = int(round(window_size * sample_rate / 1e3))
+#     noverlap = int(round(step_size * sample_rate / 1e3))
+#     freqs, times, spec = signal.spectrogram(audio,
+#                                     fs=sample_rate,
+#                                     window='hann',
+#                                     nperseg=nperseg,
+#                                     noverlap=noverlap,
+#                                     detrend=False)
+#     return np.log(spec.T.astype(np.float32) + eps)
+
+def log_specgram(data, sr=16000):
+    data = librosa.feature.melspectrogram(data, sr=sr, n_mels=40, hop_length=160, n_fft=480, fmin=20, fmax=4000)
+    data[data > 0] = np.log(data[data > 0])
+    data = [np.matmul(librosa.filters.dct(40,40), x) for x in np.split(data, data.shape[1], axis=1)]
+    data = np.array(data, order="F").squeeze(2).astype(np.float32)
+    return data
 
 def label_transform(labels):
     nlabels = []

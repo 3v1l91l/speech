@@ -28,58 +28,40 @@ def prepare_data(df):
     df.loc[df.word.isin(unknown), 'word'] = 'unknown'
     return df
 
-def get_specgrams(paths):
-    len_paths = len(paths)
-    log_specgrams = [None] * len_paths
+def get_specgrams(wavs):
+    log_specgrams = [None] * len(wavs)
     fs = 16000
-    duration = 1
-    for p in range(len_paths):
-        wav, s = librosa.load(paths[p])
-        if wav.size < fs:
-            wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
-        else:
-            wav = wav[0:fs * duration]
-        log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
-        # log_specgrams[p] = spectrogram(wav, fs)[..., np.newaxis]
-
-    # log_specgrams = [s.reshape(s.shape[0], s.shape[1], -1) for s in log_specgrams]
+    for i in range(len(wavs)):
+        log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_known(paths, silences, unknowns):
-    len_paths = len(paths)
-    log_specgrams = [None] * len_paths
+def get_specgrams_augment_known(wavs, silences, unknowns):
+    len_paths = len(wavs)
+    log_specgrams = [None]*len_paths
     fs = 16000
-    duration = 1
-    for p in range(len_paths):
-        wav, s = librosa.load(paths[p])
-        if wav.size < fs:
-            wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
-        else:
-            wav = wav[0:fs * duration]
+    for i in range(len(wavs)):
+        wav = wavs[i]
         noise = silences[int(np.random.randint(0, len(silences), 1))]
         scale = np.random.uniform(low=0, high=0.6, size=1)
         wav = (1 - scale) * wav + (noise * scale)
-        log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_unknown(paths, silences, unknowns):
-    len_paths = len(paths)
-    log_specgrams = [None] * len_paths
+def get_specgrams_augment_unknown(wavs, silences, unknowns):
+    len_paths = len(wavs)
+    log_specgrams = [None]*len_paths
     fs = 16000
     duration = 1
-    for p in range(len_paths):
-        wav, s = librosa.load(paths[p])
-        wav = pad(wav, fs, 1)
-
+    for i in range(len(wavs)):
+        wav = wavs[i]
         for x in np.random.randint(0, fs, 4):
             unknown_overlap = unknowns[int(np.random.randint(0, len(unknowns), 1))]
             unknown_overlap = pad(unknown_overlap, fs, duration)
             wav = (1 - 0.5) * wav + (np.concatenate((unknown_overlap[x:],unknown_overlap[:x])) * 0.5)
-
         noise = silences[int(np.random.randint(0, len(silences), 1))]
         scale = np.random.uniform(low=0, high=0.6, size=1)
         wav = (1 - scale) * wav + (noise * scale)
-        log_specgrams[p] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
 def pad(wav, fs, duration):

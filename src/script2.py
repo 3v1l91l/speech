@@ -59,39 +59,38 @@ def threadsafe_generator(f):
     return g
 
 @threadsafe_generator
+def batch_generator_aug(X, y, y_label, silences, unknowns, batch_size=16):
+    '''
+    Return batch of random spectrograms and corresponding labels
+    '''
+
+    while True:
+        idx = [int(x) for x in np.random.randint(0, len(X), batch_size)]
+        im = X[idx]
+        label = np.array(y[idx])
+        cur_legal_labels = [not x == 'unknown' for x in y_label[idx]]
+        cur_not_legal_labels = [not x for x in cur_legal_labels]
+        specgrams = []
+        res_labels = []
+        if any(cur_not_legal_labels):  # augment unknowns
+            specgrams.extend(get_specgrams_augment_unknown(im[cur_not_legal_labels], silences, unknowns))
+            res_labels.extend(list(label[np.where(cur_not_legal_labels)]))
+        if any(cur_legal_labels):
+            specgrams.extend(get_specgrams_augment_known(im[cur_legal_labels], silences, unknowns))
+            res_labels.extend(list(label[np.where(cur_legal_labels)]))
+        yield np.stack(specgrams), label
+
+@threadsafe_generator
 def batch_generator(X, y, y_label, silences, unknowns, batch_size=16):
     '''
     Return batch of random spectrograms and corresponding labels
     '''
 
     while True:
-        idx = np.random.randint(0, X.shape[0], batch_size)
+        idx = [int(x) for x in np.random.randint(0, len(X), batch_size)]
         im = X[idx]
-        label = y[idx]
-        cur_legal_labels = [not x == 'unknown' for x in y_label[idx]]
-        cur_not_legal_labels = [not x for x in cur_legal_labels]
-        if any(cur_not_legal_labels):  # augment unknowns
-            im[np.where(cur_not_legal_labels)] = get_specgrams_augment_unknown(im[cur_not_legal_labels], silences, unknowns)
-            # fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
-            # sample_rate, noise = wavfile.read(fpath)
-            # beg = np.random.randint(0, len(noise) - L)
-            # scale = np.random.uniform(low=0, high=0.5, size=1)
-            # noise_sample = noise[beg: beg + L]
-            # wav = im[i]
-            # im[i] = (1 - scale) * wav + (noise_sample * scale)
-
-        if any(cur_legal_labels):
-            im[np.where(cur_legal_labels)] = get_specgrams_augment_known(im[cur_legal_labels], silences, unknowns)
-            # fpath = background_noise_paths[np.random.randint(0, len(background_noise_paths) - 1)]
-            # sample_rate, noise = wavfile.read(fpath)
-            # beg = np.random.randint(0, len(noise) - L)
-            # scale = np.random.uniform(low=0, high=0.5, size=1)
-            # noise_sample = noise[beg: beg + L]
-            # wav = im[i]
-            # im[i] = (1 - scale) * wav + (noise_sample * scale)
-            # specgram = get_specgrams_augment(im)
-
-        yield np.stack(im), label
+        label = np.array(y[idx])
+        yield np.stack(get_specgrams(im)), label
 
 def get_specgram_labels(zip):
     x, y = [], []
@@ -224,6 +223,13 @@ def get_model():
 
     model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['accuracy'])
     return model
+def load_wav_by_path(p):
+    wav, s = librosa.load(p)
+    if wav.size < L:
+        wav = np.pad(wav, (L - wav.size, 0), mode='constant')
+    else:
+        wav = wav[0:L]
+    return wav
 
 def main():
     # x_train, y_train = get_x_y(False)
@@ -231,7 +237,6 @@ def main():
 
     train = prepare_data(get_path_label_df('../input/train/audio/'))
     valid = prepare_data(get_path_label_df('../input/train/valid/'))
-
 
     len_train = len(train.word.values)
     temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
@@ -245,39 +250,36 @@ def main():
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
 
-    silences = []
+    start = time.time()
+    pool = Pool()
     silence_paths = train.path[train.word == 'silence']
-    for p in silence_paths.iloc[np.random.randint(0,len(silence_paths), 100)]:
-        wav, s = librosa.load(p)
-        if wav.size < L:
-            wav = np.pad(wav, (L - wav.size, 0), mode='constant')
-        else:
-            wav = wav[0:L]
-        silences.append(wav)
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0,len(silence_paths), 100)]
+    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
 
-    unknowns = []
     unknown_paths = train.path[train.word == 'unknown']
-    for p in unknown_paths.iloc[np.random.randint(0,len(unknown_paths), 100)]:
-        wav, s = librosa.load(p)
-        if wav.size < L:
-            wav = np.pad(wav, (L - wav.size, 0), mode='constant')
-        else:
-            wav = wav[0:L]
-        unknowns.append(wav)
+    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0,len(unknown_paths), 100)]
+    unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
 
-    batch_size = 128
-    train_gen = batch_generator(train.path.values, y_train, train.word.values, silences, unknowns, batch_size=batch_size)
-    valid_gen = batch_generator(valid.path.values, y_valid, valid.word.values, silences, unknowns, batch_size=batch_size)
+    train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
+    valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
+    # train_wavs.dump('x_train')
+    # valid_wavs.dump('x_valid')
+    end = time.time()
+    print('read files in {}'.format(end-start))
+
+    batch_size = 64
+    train_gen = batch_generator_aug(train_wavs, y_train, train.word.values, silences, unknowns, batch_size=batch_size)
+    valid_gen = batch_generator(valid_wavs, y_valid, valid.word.values, silences, unknowns, batch_size=batch_size)
 
     model.fit_generator(
         generator=train_gen,
-        epochs=5,
+        epochs=1,
         steps_per_epoch=len(y_train) // batch_size,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // batch_size,
         callbacks=[
             model_checkpoint
-        ], workers=4, verbose=1)
+        ], workers=8, verbose=1)
 
     del train, valid, y_train, y_valid
     gc.collect()
@@ -311,7 +313,7 @@ def main():
 
     index = []
     results = []
-    for fnames, imgs in test_data_generator(batch=500):
+    for fnames, imgs in test_data_generator(batch=100):
         predicts = model.predict(imgs)
         predicts = np.argmax(predicts, axis=1)
         predicts = [label_index[p] for p in predicts]

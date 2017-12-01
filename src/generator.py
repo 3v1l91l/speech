@@ -3,6 +3,9 @@ from lib import *
 import threading
 import math
 
+legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
+legal_labels_without_unknown = 'yes no up down left right on off stop go silence'.split()
+
 class threadsafe_iter:
     """Takes an iterator/generator and makes it thread-safe by
     serializing call to the `next` method of given iterator/generator.
@@ -63,6 +66,29 @@ def test_data_generator(fpaths, batch=16):
         specgram = log_specgram(samples)
         imgs.append(specgram)
         fnames.append(path.split(r'/')[-1])
+        i += 1
+        if i == batch:
+            i = 0
+            imgs = np.array(imgs)[..., np.newaxis]
+            yield fnames, imgs
+    if i < batch:
+        imgs = np.array(imgs)[..., np.newaxis]
+        yield fnames, imgs
+    raise StopIteration()
+
+def valid_data_generator(fpaths, batch=16):
+    i = 0
+    for path in fpaths:
+        if i == 0:
+            imgs = []
+            fnames = []
+        samples = load_wav_by_path(path)
+        specgram = log_specgram(samples)
+        imgs.append(specgram)
+        folder = path.split(r'/')[-2]
+        if folder not in legal_labels_without_unknown:
+            folder = 'unknown'
+        fnames.append(folder)
         i += 1
         if i == batch:
             i = 0

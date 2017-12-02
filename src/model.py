@@ -51,7 +51,8 @@ def get_model():
 
 
     model = models.Model(inputs=inp, outputs=dense_1)
-    opt = optimizers.Adam()
+    # opt = optimizers.Adam()
+    sgd = optimizers.SGD(lr=3e-2, decay=1e-6, momentum=0.9, nesterov=True)
 
-    model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=sgd, loss=losses.categorical_crossentropy, metrics=['accuracy'])
     return model

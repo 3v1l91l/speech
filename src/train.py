@@ -92,19 +92,24 @@ def main():
     end = time.time()
     print('read files in {}'.format(end-start))
 
-    batch_size = 64
+    batch_size = 128
     train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
     valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 
+    start = time.time()
     model.fit_generator(
         generator=train_gen,
-        epochs=5,
+        epochs=10,
         steps_per_epoch=len_train // batch_size,
         validation_data=valid_gen,
         validation_steps=len_valid // batch_size,
         callbacks=[
             model_checkpoint
-        ], workers=4, use_multiprocessing=False, verbose=1, max_queue_size=1)
+        ],
+        # workers=4,
+        use_multiprocessing=True, verbose=1)
+    end = time.time()
+    print('trained model in {}'.format(end-start))
 
     del train, valid, y_train, y_valid
     gc.collect()

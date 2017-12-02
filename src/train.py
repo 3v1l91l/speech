@@ -43,6 +43,7 @@ def get_predicts(model, label_index):
     return index, results
 
 def validate_on_train(model, label_index):
+    zz = label_index == 'unknown'
     batch = 128
     all_fpaths = glob(os.path.join(train_data_path, '*/*wav'))
     all_folders = next(os.walk(train_data_path))[1]
@@ -51,6 +52,7 @@ def validate_on_train(model, label_index):
         correct_count = 0
         for labels, imgs in tqdm(valid_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
             predicts = model.predict(imgs)
+            # predicts = [zz if np.max(p) < 0.3 else p for p in predicts ]
             predicts = np.argmax(predicts, axis=1)
             predicts = [label_index[p] for p in predicts]
             correct_count += np.sum(np.array(predicts) == np.array(labels))
@@ -96,19 +98,19 @@ def main():
 
     model.fit_generator(
         generator=train_gen,
-        epochs=1,
+        epochs=5,
         steps_per_epoch=len_train // batch_size,
         validation_data=valid_gen,
         validation_steps=len_valid // batch_size,
         callbacks=[
             model_checkpoint
-        ], workers=8, use_multiprocessing=False, verbose=1, max_queue_size=1)
+        ], workers=4, use_multiprocessing=False, verbose=1, max_queue_size=1)
 
     del train, valid, y_train, y_valid
     gc.collect()
 
-    # model = load_model('model.model')
-    # # validate_on_train(model, label_index)
+    model = load_model('model.model')
+    validate_on_train(model, label_index)
     #
     # lp = LineProfiler()
     # lp_wrapper = lp(get_predicts)

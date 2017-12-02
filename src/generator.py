@@ -2,6 +2,7 @@ import numpy as np
 from lib import *
 import threading
 import math
+from multiprocessing import Pool
 
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 legal_labels_without_unknown = 'yes no up down left right on off stop go silence'.split()
@@ -43,11 +44,13 @@ def batch_generator(should_augment, X, y, y_label, silences, unknowns, batch_siz
         res_labels = []
         if should_augment:
             specgrams.extend(get_specgrams_augment_unknown(X[unknown_ix], silences, unknowns))
+            # specgrams.extend(p.map(get_specgrams_aug, X[unknown_ix]))
         else:
             specgrams.extend(get_specgrams(X[unknown_ix]))
         res_labels.extend(y[unknown_ix])
 
         if should_augment:
+            # specgrams.extend(p.map(get_specgrams_aug, X[known_ix]))
             specgrams.extend(get_specgrams_augment_known(X[known_ix], silences, unknowns))
         else:
             specgrams.extend(get_specgrams(X[known_ix]))

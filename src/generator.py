@@ -82,11 +82,10 @@ def test_data_generator(fpaths, batch=16):
     raise StopIteration()
 
 def valid_data_generator(fpaths, batch=16):
+    imgs = []
+    fnames = []
     i = 0
     for path in fpaths:
-        if i == 0:
-            imgs = []
-            fnames = []
         samples = load_wav_by_path(path)
         specgram = log_specgram(samples)
         imgs.append(specgram)
@@ -99,7 +98,9 @@ def valid_data_generator(fpaths, batch=16):
             i = 0
             imgs = np.array(imgs)[..., np.newaxis]
             yield fnames, imgs
-    if i < batch:
+            imgs = []
+            fnames = []
+    if (i < batch) and (len(imgs)>0):
         imgs = np.array(imgs)[..., np.newaxis]
         yield fnames, imgs
     raise StopIteration()

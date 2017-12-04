@@ -5,7 +5,7 @@ from glob import glob
 import re
 import pandas as pd
 import gc
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from keras.models import load_model
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -25,6 +25,7 @@ root_path = r'..'
 out_path = r'.'
 model_path = r'.'
 train_data_path = os.path.join(root_path, 'input', 'train', 'audio')
+valid_data_path = os.path.join(root_path, 'input', 'train', 'valid')
 test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
 background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
@@ -42,21 +43,25 @@ def get_predicts(model, label_index):
         results.extend(predicts)
     return index, results
 
-def validate_on_train(model, label_index):
+def validate(model, label_index, path):
     zz = label_index == 'unknown'
     batch = 128
-    all_fpaths = glob(os.path.join(train_data_path, '*/*wav'))
+    all_fpaths = glob(os.path.join(path, '*/*wav'))
     all_folders = next(os.walk(train_data_path))[1]
+    all_correct_count = 0
     for f in all_folders:
-        fpaths = [fp for fp in all_fpaths if fp.split(r'/')[-2] == f]
         correct_count = 0
-        for labels, imgs in tqdm(valid_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
+        fpaths = [fp for fp in all_fpaths if fp.split(r'/')[-2] == f]
+        for labels, imgs in valid_data_generator(fpaths, batch):
             predicts = model.predict(imgs)
             # predicts = [zz if np.max(p) < 0.3 else p for p in predicts ]
             predicts = np.argmax(predicts, axis=1)
             predicts = [label_index[p] for p in predicts]
             correct_count += np.sum(np.array(predicts) == np.array(labels))
+            all_correct_count += np.sum(np.array(predicts) == np.array(labels))
         print('Correct predicted for label {}: {}%'.format(f, correct_count / len(fpaths)))
+    print('=======')
+    print('Overall correctly predicted: {}%'.format(100 * all_correct_count / len(all_fpaths)))
 
 def main():
     train = prepare_data(get_path_label_df('../input/train/audio/'))
@@ -74,8 +79,11 @@ def main():
     # model = load_model('model.model')
 
     model = get_model()
-    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+    model.load_weights('model.model')
+    model_checkpoint = ModelCheckpoint('model.model', monitor='val_loss', save_best_only=True, save_weights_only=False,
                                        verbose=1)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=4)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, min_lr=0.00001)
 
     start = time.time()
     pool = Pool()
@@ -99,12 +107,14 @@ def main():
     start = time.time()
     model.fit_generator(
         generator=train_gen,
-        epochs=10,
+        epochs=15,
         steps_per_epoch=len_train // batch_size,
         validation_data=valid_gen,
         validation_steps=len_valid // batch_size,
         callbacks=[
-            model_checkpoint
+            model_checkpoint,
+            early_stopping,
+            reduce_lr
         ],
         # workers=4,
         use_multiprocessing=True, verbose=1)
@@ -115,7 +125,7 @@ def main():
     gc.collect()
 
     model = load_model('model.model')
-    validate_on_train(model, label_index)
+    validate(model, label_index, valid_data_path)
     #
     # lp = LineProfiler()
     # lp_wrapper = lp(get_predicts)

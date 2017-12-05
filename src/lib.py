@@ -10,7 +10,6 @@ from glob import glob
 import os
 import math
 import random
-import speechpy
 
 L = 16000
 new_sample_rate = 8000

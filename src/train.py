@@ -85,7 +85,7 @@ def main():
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_loss', save_best_only=True, save_weights_only=False,
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', patience=4, verbose=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, min_lr=0.00001, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, verbose=1)
     lr_tracker = LearningRateTracker()
 
     start = time.time()

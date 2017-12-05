@@ -5,7 +5,7 @@ from glob import glob
 import re
 import pandas as pd
 import gc
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, Callback
 from keras.models import load_model
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -81,11 +81,12 @@ def main():
     # model = load_model('model.model')
 
     model = get_model()
-    # model.load_weights('model.model')
+    model.load_weights('model.model')
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_loss', save_best_only=True, save_weights_only=False,
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', patience=4, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, min_lr=0.00001, verbose=1)
+    lr_tracker = LearningRateTracker()
 
     start = time.time()
     pool = Pool()
@@ -102,7 +103,7 @@ def main():
     end = time.time()
     print('read files in {}'.format(end-start))
 
-    batch_size = 128
+    batch_size = 64
     train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
     valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 
@@ -116,7 +117,8 @@ def main():
         callbacks=[
             model_checkpoint,
             early_stopping,
-            reduce_lr
+            reduce_lr,
+            lr_tracker
         ],
         workers=4,
         use_multiprocessing=False,
@@ -139,6 +141,15 @@ def main():
     # df['fname'] = index
     # df['label'] = results
     # df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+
+from keras import backend as K
+
+class LearningRateTracker(Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        optimizer = self.model.optimizer
+        lr = K.eval(optimizer.lr * (1. / (1. + optimizer.decay * optimizer.iterations)))
+        print('\nLR: {:.6f}\n'.format(lr))
+
 
 if __name__ == "__main__":
     main()

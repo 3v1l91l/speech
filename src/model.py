@@ -123,7 +123,7 @@ def get_model():
     # model = Model(inputs=base_model.input, outputs=predictions)
 
 
-    opt = optimizers.SGD(lr=5e-4, decay=0.00001, momentum=0.9, nesterov=True)
+    opt = optimizers.SGD(lr=0.2, decay=1e-6, momentum=0.9, nesterov=True)
 
     model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
     return model

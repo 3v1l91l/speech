@@ -4,8 +4,8 @@ import numpy as np
 import os
 
 audio_dir = '../input/train/audio/'
-silence_audio_dir = os.path.join(audio_dir, 'silence')
-# silence_audio_dir = os.path.join('..','input','train', 'valid','silence')
+# silence_audio_dir = os.path.join(audio_dir, 'silence')
+silence_audio_dir = os.path.join('..','input','train', 'valid','silence')
 
 if not os.path.exists(silence_audio_dir):
     os.makedirs(silence_audio_dir)
@@ -20,7 +20,8 @@ count = 0
 for i in idx:
     sec_length = (wavs[i].shape[0] // fs) - 1
     sec_start = np.random.randint(0, sec_length)
-    multiplier = np.random.rand()*0.00001
+    # multiplier = np.random.rand()*0.00001
+    multiplier = 1
     gen_wav = multiplier * wavs[i][sec_start * fs : (sec_start+1) * fs]
     wavfile.write(os.path.join(silence_audio_dir, 'noise_' + str(count) + '.wav'), fs, gen_wav)
     count += 1

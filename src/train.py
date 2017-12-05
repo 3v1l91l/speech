@@ -17,6 +17,8 @@ import cProfile
 from line_profiler import LineProfiler
 import math
 from generator import *
+import lightgbm as lgb
+
 from model import get_model
 
 L = 16000
@@ -51,7 +53,7 @@ def validate(model, label_index, path):
     all_correct_count = 0
     for f in all_folders:
         correct_count = 0
-        fpaths = [fp for fp in all_fpaths if fp.split(r'/')[-2] == f]
+        fpaths = [fp for fp in all_fpaths if fp.split('\\')[-2] == f]
         for labels, imgs in valid_data_generator(fpaths, batch):
             predicts = model.predict(imgs)
             # predicts = [zz if np.max(p) < 0.3 else p for p in predicts ]
@@ -79,11 +81,11 @@ def main():
     # model = load_model('model.model')
 
     model = get_model()
-    model.load_weights('model.model')
+    # model.load_weights('model.model')
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_loss', save_best_only=True, save_weights_only=False,
                                        verbose=1)
-    early_stopping = EarlyStopping(monitor='val_loss', patience=4)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, min_lr=0.00001)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=4, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, min_lr=0.00001, verbose=1)
 
     start = time.time()
     pool = Pool()
@@ -107,7 +109,7 @@ def main():
     start = time.time()
     model.fit_generator(
         generator=train_gen,
-        epochs=15,
+        epochs=30,
         steps_per_epoch=len_train // batch_size,
         validation_data=valid_gen,
         validation_steps=len_valid // batch_size,
@@ -116,8 +118,9 @@ def main():
             early_stopping,
             reduce_lr
         ],
-        # workers=4,
-        use_multiprocessing=True, verbose=1)
+        workers=4,
+        use_multiprocessing=False,
+        verbose=1)
     end = time.time()
     print('trained model in {}'.format(end-start))
 

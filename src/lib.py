@@ -10,6 +10,7 @@ from glob import glob
 import os
 import math
 import random
+import speechpy
 
 L = 16000
 new_sample_rate = 8000
@@ -91,33 +92,70 @@ def pad(wav, fs, duration):
         wav = wav[0:fs * duration]
     return wav
 
-def log_melspectrogram(wav, fs):
-    windows_samples = int(fs / 40)
-    hop_samples = int(windows_samples/5)
-    melspec = librosa.feature.melspectrogram(wav, n_mels=128, sr=fs, fmax=8000, n_fft=windows_samples, hop_length=hop_samples, power=2.0)
-    logspec = librosa.logamplitude(melspec)
-    return logspec
-
 def spectrogram(wav, fs):
     return signal.spectrogram(wav, fs=fs, nperseg=256, noverlap=128)[2]
 
-def log_specgram(audio, sample_rate=16000, window_size=20,
+# def log_specgram(audio, sample_rate=16000, window_size=20,
+#                  step_size=10, eps=1e-10):
+#     nperseg = int(round(window_size * sample_rate / 1e3))
+#     noverlap = int(round(step_size * sample_rate / 1e3))
+#     freqs, times, spec = signal.spectrogram(audio,
+#                                     fs=sample_rate,
+#                                     window='hann',
+#                                     nperseg=nperseg,
+#                                     noverlap=noverlap,
+#                                     detrend=False)
+#     data = np.log(spec.T.astype(np.float32) + eps)
+#     mean = np.mean(np.ravel(data))
+#     std = np.std(np.ravel(data))
+#     if std != 0:
+#         data = data - mean
+#         data = data / std
+#     return data
+
+
+# def log_specgram(audio, sample_rate=16000, window_size=20,
+#                  step_size=10, eps=1e-10):
+#     # wave, sr = librosa.load(file_path, mono=True, sr=None)
+#     # wave = wave[::3]
+#     mfcc = speechpy.feature.mfcc(audio, sampling_frequency=16000, num_cepstral=20)
+#     mean = np.mean(np.ravel(mfcc))
+#     std = np.std(np.ravel(mfcc))
+#     if std != 0:
+#         mfcc = mfcc - mean
+#         mfcc = mfcc / std
+#     return mfcc
+
+def log_specgram(audio, sr=16000, window_size=20,
                  step_size=10, eps=1e-10):
-    nperseg = int(round(window_size * sample_rate / 1e3))
-    noverlap = int(round(step_size * sample_rate / 1e3))
-    freqs, times, spec = signal.spectrogram(audio,
-                                    fs=sample_rate,
-                                    window='hann',
-                                    nperseg=nperseg,
-                                    noverlap=noverlap,
-                                    detrend=False)
-    data = np.log(spec.T.astype(np.float32) + eps)
-    mean = np.mean(np.ravel(data))
-    std = np.std(np.ravel(data))
-    if std != 0:
-        data = data - mean
-        data = data / std
-    return data
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=52, hop_length=int(0.010*sr), n_fft=int(0.025*sr))
+    mfcc_delta = librosa.feature.delta(mfcc)
+    mfcc_delta2 = librosa.feature.delta(mfcc_delta)
+    # ALthough a test showed not much difference, by eye, it seems rescaling each is better.
+    # rescale each matrix
+    res = np.array([rescale(mfcc[1:]), rescale(mfcc_delta[1:]), rescale(mfcc_delta2[1:])])
+    return res
+
+def rescale(m):
+    #rescale by global max of absolute values
+    offset = m.min()
+    scale = m.max()-m.min()
+    return (m-offset)/scale
+
+# def log_specgram(audio, sample_rate=16000, window_size=20,
+#                  step_size=10, eps=1e-10):
+#     nperseg = int(round(window_size * sample_rate / 1e3))
+#     noverlap = int(round(step_size * sample_rate / 1e3))
+#     spec = librosa.feature.melspectrogram(audio, sr=sample_rate, n_mels=128)
+#     spec = librosa.power_to_db(spec, ref=np.max)
+#
+#     mean = np.mean(np.ravel(spec))
+#     std = np.std(np.ravel(spec))
+#     if std != 0:
+#         spec = spec - mean
+#         spec = spec / std
+#     return spec
+
 
 # def log_specgram(data, sr=16000):
 #     data = librosa.feature.melspectrogram(data, sr=sr, n_mels=40, hop_length=160, n_fft=480, fmin=20, fmax=4000)
@@ -130,7 +168,7 @@ def log_specgram(audio, sample_rate=16000, window_size=20,
 #         data = data - mean
 #         data = data / std
 #
-    return data
+    # return data
 
 def label_transform(labels):
     nlabels = []
@@ -148,7 +186,11 @@ def load_wav_by_path(p):
     else:
         wav = wav[0:L]
     wav = signal.resample(wav, 8000)
-
+    mean = np.mean(np.ravel(wav))
+    std = np.std(np.ravel(wav))
+    if std != 0:
+        wav = wav - mean
+        wav = wav / std
     return wav
 
 def random_onoff():                # randomly turns on or off

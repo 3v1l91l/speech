@@ -46,8 +46,7 @@ def get_specgrams(wavs):
     log_specgrams = [None] * len(wavs)
     fs = 16000
     for i in range(len(wavs)):
-        # log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
-        log_specgrams[i] = log_specgram(wavs[i], fs)
+        log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_augment_known(wavs, silences, unknowns):
@@ -60,8 +59,7 @@ def get_specgrams_augment_known(wavs, silences, unknowns):
         # scale = np.random.uniform(low=0, high=0.3, size=1)
         # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences)
-        # log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
-        log_specgrams[i] = log_specgram(wav, fs)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_augment_unknown(wavs, silences, unknowns):
@@ -79,8 +77,7 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
         # scale = np.random.uniform(low=0, high=0.3, size=1)
         # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences)
-        # log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
-        log_specgrams[i] = log_specgram(wav, fs)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_aug(wav):
@@ -130,14 +127,8 @@ def spectrogram(wav, fs):
 
 def log_specgram(audio, sr=16000, window_size=20,
                  step_size=10, eps=1e-10):
-    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=52, hop_length=int(0.010*sr), n_fft=int(0.025*sr))
-    mfcc_delta = librosa.feature.delta(mfcc)
-    mfcc_delta2 = librosa.feature.delta(mfcc_delta)
-    # ALthough a test showed not much difference, by eye, it seems rescaling each is better.
-    # rescale each matrix
-    res = np.array([rescale(mfcc[1:]), rescale(mfcc_delta[1:]), rescale(mfcc_delta2[1:])])
-    res = np.swapaxes(res, 2, 0)
-    return res
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40, hop_length=int(0.02*sr), n_fft=int(0.04*sr))
+    return mfcc
 
 def rescale(m):
     #rescale by global max of absolute values
@@ -188,7 +179,7 @@ def load_wav_by_path(p):
         wav = np.pad(wav, (L - wav.size, 0), mode='constant')
     else:
         wav = wav[0:L]
-    wav = signal.resample(wav, 8000)
+    # wav = signal.resample(wav, 8000)
     mean = np.mean(np.ravel(wav))
     std = np.std(np.ravel(wav))
     if std != 0:

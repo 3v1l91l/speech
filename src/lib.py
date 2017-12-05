@@ -47,7 +47,8 @@ def get_specgrams(wavs):
     log_specgrams = [None] * len(wavs)
     fs = 16000
     for i in range(len(wavs)):
-        log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
+        # log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wavs[i], fs)
     return log_specgrams
 
 def get_specgrams_augment_known(wavs, silences, unknowns):
@@ -60,7 +61,8 @@ def get_specgrams_augment_known(wavs, silences, unknowns):
         # scale = np.random.uniform(low=0, high=0.3, size=1)
         # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences)
-        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        # log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)
     return log_specgrams
 
 def get_specgrams_augment_unknown(wavs, silences, unknowns):
@@ -78,7 +80,8 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
         # scale = np.random.uniform(low=0, high=0.3, size=1)
         # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences)
-        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        # log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)
     return log_specgrams
 
 def get_specgrams_aug(wav):
@@ -134,6 +137,7 @@ def log_specgram(audio, sr=16000, window_size=20,
     # ALthough a test showed not much difference, by eye, it seems rescaling each is better.
     # rescale each matrix
     res = np.array([rescale(mfcc[1:]), rescale(mfcc_delta[1:]), rescale(mfcc_delta2[1:])])
+    res = np.swapaxes(res, 2, 0)
     return res
 
 def rescale(m):

@@ -56,7 +56,7 @@ def batch_generator(should_augment, X, y, y_label, silences, unknowns, batch_siz
             specgrams.extend(get_specgrams(X[known_ix]))
         res_labels.extend(y[known_ix])
 
-        specgrams.extend(get_specgrams(X[silence_ix]))
+        specgrams.extend(get_specgrams_augment_unknown(X[silence_ix]))
         res_labels.extend(y[silence_ix])
 
         yield np.stack(specgrams), np.array(res_labels)

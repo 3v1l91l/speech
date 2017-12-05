@@ -109,7 +109,7 @@ def get_model():
     # opt = optimizers.Adam()
     # opt = optimizers.SGD(lr  =0.02, decay=1e-6, momentum=0.9, nesterov=True)
     # opt = optimizers.SGD(lr=10*0.02)
-    base_model = applications.VGG16(weights=None, include_top=False, input_shape=(3,51,51))
+    base_model = applications.VGG16(weights=None, include_top=False, input_shape=(51,51,3))
 
     # add a global spatial average pooling layer
     x = base_model.output

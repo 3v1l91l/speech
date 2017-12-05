@@ -127,8 +127,8 @@ def main():
     del train, valid, y_train, y_valid
     gc.collect()
 
-    model = load_model('model.model')
-    validate(model, label_index, valid_data_path)
+    # model = load_model('model.model')
+    # validate(model, label_index, valid_data_path)
     #
     # lp = LineProfiler()
     # lp_wrapper = lp(get_predicts)

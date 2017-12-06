@@ -86,7 +86,7 @@ def main():
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', patience=4, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, verbose=1)
-    lr_tracker = LearningRateTracker()
+    # lr_tracker = LearningRateTracker()
 
     start = time.time()
     pool = Pool()
@@ -103,7 +103,7 @@ def main():
     end = time.time()
     print('read files in {}'.format(end-start))
 
-    batch_size = 64
+    batch_size = 128
     train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
     valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 
@@ -118,7 +118,7 @@ def main():
             model_checkpoint,
             early_stopping,
             reduce_lr,
-            lr_tracker
+            # lr_tracker
         ],
         workers=4,
         use_multiprocessing=False,
@@ -130,8 +130,8 @@ def main():
     gc.collect()
 
     # model = load_model('model.model')
-    # validate(model, label_index, valid_data_path)
-    #
+    # # validate(model, label_index, valid_data_path)
+    # #
     # lp = LineProfiler()
     # lp_wrapper = lp(get_predicts)
     # index, results = lp_wrapper(model, label_index)

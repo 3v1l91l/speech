@@ -122,8 +122,8 @@ def get_model():
     # # this is the model we will train
     # model = Model(inputs=base_model.input, outputs=predictions)
 
-
-    opt = optimizers.SGD(lr=0.2, decay=1e-6, momentum=0.9, nesterov=True)
+    opt = optimizers.Adam()
+    # opt = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 
     model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
     return model

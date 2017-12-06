@@ -125,9 +125,13 @@ def spectrogram(wav, fs):
 #         mfcc = mfcc / std
 #     return mfcc
 
-def log_specgram(audio, sr=16000, window_size=20,
-                 step_size=10, eps=1e-10):
+def log_specgram(audio, sr=16000):
     mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40, hop_length=int(0.02*sr), n_fft=int(0.04*sr))
+    mean = np.mean(np.ravel(mfcc))
+    std = np.std(np.ravel(mfcc))
+    if std != 0:
+        mfcc = mfcc - mean
+        mfcc = mfcc / std
     return mfcc
 
 def rescale(m):
@@ -203,7 +207,7 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         # else:
         #     y_mod +=  noise_amp * np.random.normal(size=length)
         noise = noises[random.randint(0, len(noises) - 1)]
-        scale = np.random.uniform(low=0, high=0.4, size=1)
+        scale = np.random.uniform(low=0, high=0.25, size=1)
         y_mod = (1 - scale) * y_mod + (noise * scale)
 
     # change speed and pitch together
@@ -217,11 +221,11 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         y_mod[0:minlen] = tmp[0:minlen]
 
     # change pitch (w/o speed)
-    # if (allow_pitch) and random_onoff():
-    #     bins_per_octave = 24        # pitch increments are quarter-steps
-    #     pitch_pm = 4                                # +/- this many quarter steps
-    #     pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
-    #     y_mod = librosa.effects.pitch_shift(y, sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
+    if (allow_pitch) and random_onoff():
+        bins_per_octave = 24        # pitch increments are quarter-steps
+        pitch_pm = 4                                # +/- this many quarter steps
+        pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
+        y_mod = librosa.effects.pitch_shift(y, sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
 
     # change speed (w/o pitch),
     # if (allow_speed) and random_onoff():
@@ -232,9 +236,9 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     #     y_mod[0:minlen] = tmp[0:minlen]
 
     # change dynamic range
-    if (allow_dyn) and random_onoff():
-        dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
-        y_mod = y_mod * dyn_change
+    # if (allow_dyn) and random_onoff():
+    #     dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
+    #     y_mod = y_mod * dyn_change
 
     # shift in time forwards or backwards
     if (allow_timeshift) and random_onoff():

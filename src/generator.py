@@ -70,7 +70,7 @@ def test_data_generator(fpaths, batch=16):
         samples = load_wav_by_path(path)
         specgram = log_specgram(samples)
         imgs.append(specgram)
-        fnames.append(path.split(r'/')[-1])
+        fnames.append(path.split('\\')[-1])
         i += 1
         if i == batch:
             i = 0
@@ -89,7 +89,7 @@ def valid_data_generator(fpaths, batch=16):
         samples = load_wav_by_path(path)
         specgram = log_specgram(samples)
         imgs.append(specgram)
-        folder = path.split(r'/')[-2]
+        folder = path.split('\\')[-2]
         if folder not in legal_labels_without_unknown:
             folder = 'unknown'
         fnames.append(folder)

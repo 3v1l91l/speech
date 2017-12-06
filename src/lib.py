@@ -18,8 +18,8 @@ out_path = r'.'
 model_path = r'.'
 train_data_path = os.path.join(root_path, 'input', 'train', 'audio')
 test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
-background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
-silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
+background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_', '*wav'))
+silence_paths = glob(os.path.join(train_data_path, 'silence', '*wav'))
 
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 

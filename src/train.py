@@ -53,7 +53,7 @@ def validate(model, label_index, path):
     all_correct_count = 0
     for f in all_folders:
         correct_count = 0
-        fpaths = [fp for fp in all_fpaths if fp.split(r'/')[-2] == f]
+        fpaths = [fp for fp in all_fpaths if fp.split('\\')[-2] == f]
         for labels, imgs in valid_data_generator(fpaths, batch):
             predicts = model.predict(imgs)
             # predicts = [zz if np.max(p) < 0.3 else p for p in predicts ]
@@ -112,9 +112,9 @@ def main():
     model.fit_generator(
         generator=train_gen,
         epochs=30,
-        steps_per_epoch=len_train // batch_size,
+        steps_per_epoch=(len_train // batch_size) // 20,
         validation_data=valid_gen,
-        validation_steps=len_valid // batch_size,
+        validation_steps=len_valid // batch_size // 10,
         callbacks=[
             model_checkpoint,
             early_stopping,
@@ -131,7 +131,9 @@ def main():
     gc.collect()
 
     # model = load_model('model.model')
-    # # validate(model, label_index, valid_data_path)
+    # model = MobileNet()
+    # model.load_weights('model.model')
+    # validate(model, label_index, valid_data_path)
     # #
     # lp = LineProfiler()
     # lp_wrapper = lp(get_predicts)

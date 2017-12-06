@@ -19,7 +19,7 @@ import math
 from generator import *
 import lightgbm as lgb
 
-from model import get_model
+from model import get_model, MobileNet
 
 L = 16000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
@@ -80,13 +80,14 @@ def main():
 
     # model = load_model('model.model')
 
-    model = get_model()
-    model.load_weights('model.model')
+    # model = get_model()
+    model = MobileNet()
+    # model.load_weights('model.model')
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_loss', save_best_only=True, save_weights_only=False,
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', patience=4, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, verbose=1)
-    # lr_tracker = LearningRateTracker()
+    lr_tracker = LearningRateTracker()
 
     start = time.time()
     pool = Pool()
@@ -118,7 +119,7 @@ def main():
             model_checkpoint,
             early_stopping,
             reduce_lr,
-            # lr_tracker
+            lr_tracker
         ],
         workers=4,
         use_multiprocessing=False,
@@ -143,12 +144,13 @@ def main():
     # df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 from keras import backend as K
-
 class LearningRateTracker(Callback):
-    def on_epoch_end(self, epoch, logs={}):
-        optimizer = self.model.optimizer
-        lr = K.eval(optimizer.lr * (1. / (1. + optimizer.decay * optimizer.iterations)))
-        print('\nLR: {:.6f}\n'.format(lr))
+    def on_epoch_end(self, epoch, logs=None):
+        lr = self.model.optimizer.lr
+        decay = self.model.optimizer.decay
+        iterations = self.model.optimizer.iterations
+        lr_with_decay = lr / (1. + decay * K.cast(iterations, K.dtype(decay)))
+        print("Learning rate: {}".format(K.eval(lr_with_decay)))
 
 
 if __name__ == "__main__":

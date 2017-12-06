@@ -1,6 +1,7 @@
 from keras import optimizers, losses, activations, models, applications
 from keras.layers import GlobalAveragePooling2D, Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization, ZeroPadding2D, Activation, Conv2D
 from keras.models import Sequential, Model
+from depthwise_conv2d import DepthwiseConvolution2D
 
 def get_model():
     # input_shape = (99, 161, 1)
@@ -122,8 +123,114 @@ def get_model():
     # # this is the model we will train
     # model = Model(inputs=base_model.input, outputs=predictions)
 
-    opt = optimizers.Adam()
+    opt = optimizers.Adam(lr=0.0001)
     # opt = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 
+    model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
+    return model
+
+
+def MobileNet(alpha=1, shallow=True, classes=12):
+    """Instantiates the MobileNet.Network has two hyper-parameters
+        which are the width of network (controlled by alpha)
+        and input size.
+
+        # Arguments
+            input_tensor: optional Keras tensor (i.e. output of `layers.Input()`)
+                to use as image input for the model.
+            input_shape: optional shape tuple, only to be specified
+                if `include_top` is False (otherwise the input shape
+                has to be `(224, 224, 3)` (with `channels_last` data format)
+                or `(3, 224, 244)` (with `channels_first` data format).
+                It should have exactly 3 inputs channels,
+                and width and height should be no smaller than 96.
+                E.g. `(200, 200, 3)` would be one valid value.
+            alpha: optional parameter of the network to change the
+                width of model.
+            shallow: optional parameter for making network smaller.
+            classes: optional number of classes to classify images
+                into.
+        # Returns
+            A Keras model instance.
+        """
+    input_shape = (40, 51, 1)
+    img_input = Input(shape=input_shape)
+
+    x = Convolution2D(int(32 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(img_input)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(32 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(64 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(64 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(128 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(128 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(128 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(128 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(256 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(256 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(256 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(256 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(512 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    if not shallow:
+        for _ in range(5):
+            x = DepthwiseConvolution2D(int(512 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
+            x = Convolution2D(int(512 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+            x = BatchNormalization()(x)
+            x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(512 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(1024 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = DepthwiseConvolution2D(int(1024 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(int(1024 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    x = GlobalAveragePooling2D()(x)
+    out = Dense(classes, activation='softmax')(x)
+
+    inputs = img_input
+
+    model = Model(inputs, out, name='mobilenet')
+    opt = optimizers.Adam()
     model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
     return model

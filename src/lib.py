@@ -46,6 +46,7 @@ def get_specgrams(wavs):
     log_specgrams = [None] * len(wavs)
     fs = 16000
     for i in range(len(wavs)):
+        # log_specgrams[i] = log_specgram(wavs[i], fs)
         log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
     return log_specgrams
 
@@ -60,6 +61,7 @@ def get_specgrams_augment_known(wavs, silences, unknowns):
         # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        # log_specgrams[i] = log_specgram(wav, fs)
     return log_specgrams
 
 def get_specgrams_augment_unknown(wavs, silences, unknowns):
@@ -78,11 +80,14 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
         # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        # log_specgrams[i] = log_specgram(wav, fs)
+
     return log_specgrams
 
 def get_specgrams_aug(wav):
     fs = 16000
     return log_specgram(augment_data(wav, fs), fs)[..., np.newaxis]
+    # return log_specgram(augment_data(wav, fs), fs)
 
 def pad(wav, fs, duration):
     if wav.size < fs:

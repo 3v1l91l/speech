@@ -61,6 +61,41 @@ def batch_generator(should_augment, X, y, y_label, silences, unknowns, batch_siz
 
         yield np.stack(specgrams), np.array(res_labels)
 
+@threadsafe_generator
+def batch_generator_paths(should_augment, X_paths, y, y_label, silences, unknowns, batch_size=16):
+    while True:
+        # Try to represent classes distribution
+        batch_size_unknown = math.ceil(0.1 * batch_size)
+        batch_size_silence = math.ceil(0.1 * batch_size)
+        batch_size_known = batch_size - batch_size_unknown - batch_size_silence
+        unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
+        silence_ix = np.random.choice(y_label[y_label == 'silence'].index, size=batch_size_silence)
+        known_ix = np.random.choice(y_label[(y_label != 'unknown') & (y_label != 'silence')].index, size=batch_size_known)
+        X = list(map(load_wav_by_path, np.concatenate((X_paths[unknown_ix],X_paths[silence_ix],X_paths[known_ix]))))
+
+        # specgrams = []
+        # res_labels = []
+        # if should_augment:
+        #     specgrams.extend(get_specgrams_augment_unknown(X[:len(unknown_ix)], silences, unknowns))
+        #     # specgrams.extend(p.map(get_specgrams_aug, X[unknown_ix]))
+        # else:
+        #     specgrams.extend(get_specgrams(X[unknown_ix]))
+        # res_labels.extend(y[unknown_ix])
+        #
+        # if should_augment:
+        #     # specgrams.extend(p.map(get_specgrams_aug, X[known_ix]))
+        #     specgrams.extend(get_specgrams_augment_known(X[len(unknown_ix):len(unknown_ix)+len(silence_ix)], silences, unknowns))
+        # else:
+        #     specgrams.extend(get_specgrams(X[known_ix]))
+        # res_labels.extend(y[known_ix])
+        #
+        # specgrams.extend(get_specgrams_augment_unknown(X[len(unknown_ix)+len(silence_ix):], silences, unknowns))
+        # res_labels.extend(y[silence_ix])
+
+        specgrams = get_specgrams_augment_unknown(X, silences, unknowns)
+        res_labels = np.concatenate((y[unknown_ix],y[silence_ix],y[known_ix]))
+        yield np.stack(specgrams), res_labels
+
 def test_data_generator(fpaths, batch=16):
     i = 0
     for path in fpaths:
@@ -74,10 +109,12 @@ def test_data_generator(fpaths, batch=16):
         i += 1
         if i == batch:
             i = 0
-            imgs = np.array(imgs)[..., np.newaxis]
+            # imgs = np.array(imgs)[..., np.newaxis]
+            imgs = np.array(imgs)
             yield fnames, imgs
     if i < batch:
-        imgs = np.array(imgs)[..., np.newaxis]
+        # imgs = np.array(imgs)[..., np.newaxis]
+        imgs = np.array(imgs)
         yield fnames, imgs
     raise StopIteration()
 
@@ -96,11 +133,13 @@ def valid_data_generator(fpaths, batch=16):
         i += 1
         if i == batch:
             i = 0
-            imgs = np.array(imgs)[..., np.newaxis]
+            # imgs = np.array(imgs)[..., np.newaxis]
+            imgs = np.array(imgs)
             yield fnames, imgs
             imgs = []
             fnames = []
     if (i < batch) and (len(imgs)>0):
-        imgs = np.array(imgs)[..., np.newaxis]
+        # imgs = np.array(imgs)[..., np.newaxis]
+        imgs = np.array(imgs)
         yield fnames, imgs
     raise StopIteration()

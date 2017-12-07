@@ -1,5 +1,5 @@
 from keras import optimizers, losses, activations, models, applications
-from keras.layers import GlobalAveragePooling2D, Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization, ZeroPadding2D, Activation, Conv2D
+from keras.layers import GRU, Reshape, GlobalAveragePooling2D, Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization, ZeroPadding2D, Activation, Conv2D
 from keras.models import Sequential, Model
 from depthwise_conv2d import DepthwiseConvolution2D
 
@@ -131,41 +131,9 @@ def get_model():
 
 
 def MobileNet(alpha=1, shallow=True, classes=12):
-    """Instantiates the MobileNet.Network has two hyper-parameters
-        which are the width of network (controlled by alpha)
-        and input size.
-
-        # Arguments
-            input_tensor: optional Keras tensor (i.e. output of `layers.Input()`)
-                to use as image input for the model.
-            input_shape: optional shape tuple, only to be specified
-                if `include_top` is False (otherwise the input shape
-                has to be `(224, 224, 3)` (with `channels_last` data format)
-                or `(3, 224, 244)` (with `channels_first` data format).
-                It should have exactly 3 inputs channels,
-                and width and height should be no smaller than 96.
-                E.g. `(200, 200, 3)` would be one valid value.
-            alpha: optional parameter of the network to change the
-                width of model.
-            shallow: optional parameter for making network smaller.
-            classes: optional number of classes to classify images
-                into.
-        # Returns
-            A Keras model instance.
-        """
     input_shape = (40, 51, 1)
+    # input_shape = (40, 51)
     img_input = Input(shape=input_shape)
-
-    x = Convolution2D(int(32 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(img_input)
-    x = BatchNormalization()(x)
-    x = Activation('relu')(x)
-
-    x = DepthwiseConvolution2D(int(32 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
-    x = BatchNormalization()(x)
-    x = Activation('relu')(x)
-    x = Convolution2D(int(64 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    x = BatchNormalization()(x)
-    x = Activation('relu')(x)
 
     # x = Convolution2D(int(32 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(img_input)
     # x = BatchNormalization()(x)
@@ -177,71 +145,35 @@ def MobileNet(alpha=1, shallow=True, classes=12):
     # x = Convolution2D(int(64 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
     # x = BatchNormalization()(x)
     # x = Activation('relu')(x)
+    # x = Dropout(0.25)(x)
     #
     # x = DepthwiseConvolution2D(int(64 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
     # x = BatchNormalization()(x)
     # x = Activation('relu')(x)
-    # x = Convolution2D(int(128 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
+    # x = Convolution2D(int(64 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
     # x = BatchNormalization()(x)
     # x = Activation('relu')(x)
-    #
-    # x = DepthwiseConvolution2D(int(128 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    # x = Convolution2D(int(128 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
+    # x = Dropout(0.25)(x)
 
-    # x = DepthwiseConvolution2D(int(128 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    # x = Convolution2D(int(256 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    #
-    # x = DepthwiseConvolution2D(int(256 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    # x = Convolution2D(int(256 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    #
-    # x = DepthwiseConvolution2D(int(256 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    # x = Convolution2D(int(512 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
+    # x = GlobalAveragePooling2D()(x)
 
-    # if not shallow:
-    #     for _ in range(5):
-    #         x = DepthwiseConvolution2D(int(512 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
-    #         x = BatchNormalization()(x)
-    #         x = Activation('relu')(x)
-    #         x = Convolution2D(int(512 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    #         x = BatchNormalization()(x)
-    #         x = Activation('relu')(x)
-    #
-    # x = DepthwiseConvolution2D(int(512 * alpha), (3, 3), strides=(2, 2), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    # x = Convolution2D(int(1024 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    #
-    # x = DepthwiseConvolution2D(int(1024 * alpha), (3, 3), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
-    # x = Convolution2D(int(1024 * alpha), (1, 1), strides=(1, 1), padding='same', use_bias=False)(x)
-    # x = BatchNormalization()(x)
-    # x = Activation('relu')(x)
 
-    x = GlobalAveragePooling2D()(x)
-    out = Dense(classes, activation='softmax')(x)
+    # model = Sequential()
+    # model.add(GRU(units=250, input_shape=input_shape))
+    # model.add(Dense(classes, activation='softmax'))
 
-    inputs = img_input
+    model = Sequential()
+    model.add(Conv2D(filters=100,kernel_size=(4,10),strides=(1,2), activation='relu', input_shape=input_shape))
+    conv_to_rnn_dims = (37,21*100)
+    model.add(Reshape(target_shape=conv_to_rnn_dims, name='reshape'))
+    model.add(GRU(units=136,activation='relu'))
+    # model.add(Reshape(target_shape=conv_to_rnn_dims, name='reshape'))
+    # model.add(GRU(units=136,activation='relu'))
+    model.add(Dense(188, activation='relu'))
+    model.add(Dense(classes, activation='softmax'))
 
-    model = Model(inputs, out, name='mobilenet')
-    opt = optimizers.Adam()
+    # opt = optimizers.Adam(lr=0.003)
+    opt = optimizers.SGD(lr=0.3)
+
     model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
     return model

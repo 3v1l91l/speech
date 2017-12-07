@@ -17,7 +17,7 @@ import cProfile
 from line_profiler import LineProfiler
 import math
 from generator import *
-import lightgbm as lgb
+# import lightgbm as lgb
 
 from model import get_model, MobileNet
 
@@ -107,14 +107,17 @@ def main():
     batch_size = 128
     train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
     valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
+    # train_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
+    # # valid_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
+    # valid_gen = batch_generator_paths(False, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 
     start = time.time()
     model.fit_generator(
         generator=train_gen,
         epochs=30,
-        steps_per_epoch=(len_train // batch_size) // 20,
+        steps_per_epoch=(len_train // batch_size),
         validation_data=valid_gen,
-        validation_steps=len_valid // batch_size // 10,
+        validation_steps=len_valid // batch_size,
         callbacks=[
             model_checkpoint,
             early_stopping,
@@ -131,8 +134,8 @@ def main():
     gc.collect()
 
     # model = load_model('model.model')
-    # model = MobileNet()
-    # model.load_weights('model.model')
+    # # model = MobileNet()
+    # # model.load_weights('model.model')
     # validate(model, label_index, valid_data_path)
     # #
     # lp = LineProfiler()

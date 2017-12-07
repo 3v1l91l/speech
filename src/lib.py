@@ -65,6 +65,8 @@ def get_specgrams_augment_known(wavs, silences, unknowns):
     return log_specgrams
 
 def get_specgrams_augment_unknown(wavs, silences, unknowns):
+    if len(wavs) == 0:
+        print('err')
     len_paths = len(wavs)
     log_specgrams = [None]*len_paths
     fs = 16000
@@ -79,6 +81,8 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
         # scale = np.random.uniform(low=0, high=0.3, size=1)
         # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences)
+        if wav.shape in [0]:
+            print('err')
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
         # log_specgrams[i] = log_specgram(wav, fs)
 
@@ -131,7 +135,8 @@ def spectrogram(wav, fs):
 #     return mfcc
 
 def log_specgram(audio, sr=16000):
-    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40, hop_length=int(0.02*sr), n_fft=int(0.04*sr))
+    n_mfcc = 10
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=int(0.02*sr), n_fft=int(0.04*sr))
     mean = np.mean(np.ravel(mfcc))
     std = np.std(np.ravel(mfcc))
     if std != 0:
@@ -226,11 +231,11 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         y_mod[0:minlen] = tmp[0:minlen]
 
     # change pitch (w/o speed)
-    if (allow_pitch) and random_onoff():
-        bins_per_octave = 24        # pitch increments are quarter-steps
-        pitch_pm = 4                                # +/- this many quarter steps
-        pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
-        y_mod = librosa.effects.pitch_shift(y, sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
+    # if (allow_pitch) and random_onoff():
+    #     bins_per_octave = 24        # pitch increments are quarter-steps
+    #     pitch_pm = 4                                # +/- this many quarter steps
+    #     pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
+    #     y_mod = librosa.effects.pitch_shift(y, sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
 
     # change speed (w/o pitch),
     # if (allow_speed) and random_onoff():
@@ -241,9 +246,9 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     #     y_mod[0:minlen] = tmp[0:minlen]
 
     # change dynamic range
-    # if (allow_dyn) and random_onoff():
-    #     dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
-    #     y_mod = y_mod * dyn_change
+    if (allow_dyn) and random_onoff():
+        dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
+        y_mod = y_mod * dyn_change
 
     # shift in time forwards or backwards
     if (allow_timeshift) and random_onoff():

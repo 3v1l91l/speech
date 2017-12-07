@@ -105,16 +105,16 @@ def test_data_generator(fpaths, batch=16):
         samples = load_wav_by_path(path)
         specgram = log_specgram(samples)
         imgs.append(specgram)
-        fnames.append(path.split('\\')[-1])
+        fnames.append(path.split(r'/')[-1])
         i += 1
         if i == batch:
             i = 0
-            # imgs = np.array(imgs)[..., np.newaxis]
-            imgs = np.array(imgs)
+            imgs = np.array(imgs)[..., np.newaxis]
+            # imgs = np.array(imgs)
             yield fnames, imgs
     if i < batch:
-        # imgs = np.array(imgs)[..., np.newaxis]
-        imgs = np.array(imgs)
+        imgs = np.array(imgs)[..., np.newaxis]
+        # imgs = np.array(imgs)
         yield fnames, imgs
     raise StopIteration()
 
@@ -126,20 +126,20 @@ def valid_data_generator(fpaths, batch=16):
         samples = load_wav_by_path(path)
         specgram = log_specgram(samples)
         imgs.append(specgram)
-        folder = path.split('\\')[-2]
+        folder = path.split(r'/')[-2]
         if folder not in legal_labels_without_unknown:
             folder = 'unknown'
         fnames.append(folder)
         i += 1
         if i == batch:
             i = 0
-            # imgs = np.array(imgs)[..., np.newaxis]
-            imgs = np.array(imgs)
+            imgs = np.array(imgs)[..., np.newaxis]
+            # imgs = np.array(imgs)
             yield fnames, imgs
             imgs = []
             fnames = []
     if (i < batch) and (len(imgs)>0):
-        # imgs = np.array(imgs)[..., np.newaxis]
-        imgs = np.array(imgs)
+        imgs = np.array(imgs)[..., np.newaxis]
+        # imgs = np.array(imgs)
         yield fnames, imgs
     raise StopIteration()

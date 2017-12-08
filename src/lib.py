@@ -23,7 +23,7 @@ silence_paths = glob(os.path.join(train_data_path, 'silence', '*wav'))
 
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 
-def get_path_label_df(path, pattern='**/*.wav'):
+def get_path_label_df(path, pattern='**' + os.sep + '*.wav'):
     ''' Returns dataframe with columns: 'path', 'word'.'''
     datadir = Path(path)
     files = [(str(f), f.parts[-2]) for f in datadir.glob(pattern) if f]

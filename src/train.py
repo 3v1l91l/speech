@@ -54,7 +54,7 @@ def validate(model, label_index, path):
     all_correct_count = 0
     for f in all_folders:
         correct_count = 0
-        fpaths = [fp for fp in all_fpaths if fp.split(r'/')[-2] == f]
+        fpaths = [fp for fp in all_fpaths if fp.split(os.sep)[-2] == f]
         for labels, imgs in valid_data_generator(fpaths, batch):
             predicts = model.predict(imgs)
             # predicts = [zz if np.max(p) < 0.3 else p for p in predicts ]

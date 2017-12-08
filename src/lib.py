@@ -59,7 +59,21 @@ def get_specgrams_augment_known(wavs, silences, unknowns):
         # noise = silences[random.randint(0, len(silences)-1)]
         # scale = np.random.uniform(low=0, high=0.3, size=1)
         # wav = (1 - scale) * wav + (noise * scale)
-        wav = augment_data(wavs[i], fs, silences)
+        wav = augment_data(wavs[i], fs, silences, unknowns)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        # log_specgrams[i] = log_specgram(wav, fs)
+    return log_specgrams
+
+def get_specgrams_augment_known_valid(wavs, silences, unknowns):
+    len_paths = len(wavs)
+    log_specgrams = [None]*len_paths
+    fs = 16000
+    for i in range(len(wavs)):
+        # wav = wavs[i]
+        # noise = silences[random.randint(0, len(silences)-1)]
+        # scale = np.random.uniform(low=0, high=0.3, size=1)
+        # wav = (1 - scale) * wav + (noise * scale)
+        wav = augment_data_valid(wavs[i], fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
         # log_specgrams[i] = log_specgram(wav, fs)
     return log_specgrams
@@ -80,9 +94,8 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
         # noise = silences[random.randint(0, len(silences)-1)]
         # scale = np.random.uniform(low=0, high=0.3, size=1)
         # wav = (1 - scale) * wav + (noise * scale)
-        wav = augment_data(wavs[i], fs, silences)
-        if wav.shape in [0]:
-            print('err')
+
+        wav = augment_unknown_data(wavs[i], fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
         # log_specgrams[i] = log_specgram(wav, fs)
 
@@ -215,7 +228,33 @@ def load_wav_by_path(p):
 def random_onoff():                # randomly turns on or off
     return bool(random.getrandbits(1))
 
-def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
+def augment_unknown_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
+    allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
+    length = y.shape[0]
+    y_mod = y
+    if random_onoff():
+        unknown = unknowns[random.randint(0, len(unknowns) - 1)]
+        unknown = np.roll(unknown, np.random.randint(0, sr, 1))
+        scale = np.random.randint(0.5, 0.8, 1)
+        y_mod = (1 - scale) * y_mod + (unknown * scale)
+    return y_mod
+
+def augment_data_valid(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
+    allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
+    length = y.shape[0]
+    y_mod = y
+
+    if random_onoff():
+        timeshift_fac = 0.3 *2*(np.random.uniform()-0.5)
+        start = int(length * timeshift_fac)
+        if (start > 0):
+            y_mod = np.pad(y_mod,(start,0),mode='constant')[0:y_mod.shape[0]]
+        else:
+            y_mod = np.pad(y_mod,(0,-start),mode='constant')[0:y_mod.shape[0]]
+    return y_mod
+
+
+def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
     allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
     length = y.shape[0]
     y_mod = y
@@ -230,6 +269,15 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         noise = noises[random.randint(0, len(noises) - 1)]
         scale = np.random.uniform(low=0, high=0.25, size=1)
         y_mod = (1 - scale) * y_mod + (noise * scale)
+
+    # shift in time forwards or backwards
+    if (allow_timeshift) and random_onoff():
+        timeshift_fac = 0.3 *2*(np.random.uniform()-0.5)
+        start = int(length * timeshift_fac)
+        if (start > 0):
+            y_mod = np.pad(y_mod,(start,0),mode='constant')[0:y_mod.shape[0]]
+        else:
+            y_mod = np.pad(y_mod,(0,-start),mode='constant')[0:y_mod.shape[0]]
 
     # change speed and pitch together
     if (allow_speedandpitch) and random_onoff():
@@ -260,14 +308,5 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     if (allow_dyn) and random_onoff():
         dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
         y_mod = y_mod * dyn_change
-
-    # shift in time forwards or backwards
-    if (allow_timeshift) and random_onoff():
-        timeshift_fac = 0.2 *2*(np.random.uniform()-0.5)  # up to 20% of length
-        start = int(length * timeshift_fac)
-        if (start > 0):
-            y_mod = np.pad(y_mod,(start,0),mode='constant')[0:y_mod.shape[0]]
-        else:
-            y_mod = np.pad(y_mod,(0,-start),mode='constant')[0:y_mod.shape[0]]
 
     return y_mod

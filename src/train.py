@@ -34,7 +34,7 @@ background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 
 def get_predicts(model, label_index):
-    fpaths = glob(os.path.join(test_data_path, '*wav'))
+    fpaths = glob(os.path.join(test_data_path, '*wav'))[:2000]
     index = []
     results = []
     batch = 128
@@ -76,72 +76,72 @@ def main():
     y_train, y_valid = temp[:len_train], temp[len_train:]
 
     label_index = y_train.columns.values
-    # y_train = np.array(y_train.values)
-    # y_valid = np.array(y_valid.values)
-    #
+    y_train = np.array(y_train.values)
+    y_valid = np.array(y_valid.values)
+
     # model = load_model('model.model')
-    #
-    # # model = get_model()
-    # # model = MobileNet()
-    # # model.load_weights('model.model')
-    # model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
-    #                                    verbose=1)
-    # early_stopping = EarlyStopping(monitor='val_acc', patience=4, verbose=1)
-    # reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
-    # lr_tracker = LearningRateTracker()
-    #
-    # start = time.time()
-    # pool = Pool()
-    # silence_paths = train.path[train.word == 'silence']
-    # rand_silence_paths = silence_paths.iloc[np.random.randint(0,len(silence_paths), 50)]
-    # silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
-    #
-    # unknown_paths = train.path[train.word == 'unknown']
-    # rand_unknown_paths = unknown_paths.iloc[np.random.randint(0,len(unknown_paths), 50)]
-    # unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
-    #
-    # # train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
-    # # valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
-    # end = time.time()
-    # print('read files in {}'.format(end-start))
-    #
-    # batch_size = 128
-    # # train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
-    # # valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
+
+    # model = get_model()
+    model = MobileNet()
+    # model.load_weights('model.model')
+    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+                                       verbose=1)
+    early_stopping = EarlyStopping(monitor='val_acc', patience=4, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
+    lr_tracker = LearningRateTracker()
+
+    start = time.time()
+    pool = Pool()
+    silence_paths = train.path[train.word == 'silence']
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0,len(silence_paths), 50)]
+    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
+
+    unknown_paths = train.path[train.word == 'unknown']
+    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0,len(unknown_paths), 500)]
+    unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
+
+    train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
+    valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
+    end = time.time()
+    print('read files in {}'.format(end-start))
+
+    batch_size = 128
+    train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
+    valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
     # train_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
     # # valid_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
     # valid_gen = batch_generator_paths(False, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
-    #
-    # start = time.time()
-    # model.fit_generator(
-    #     generator=train_gen,
-    #     epochs=30,
-    #     steps_per_epoch=len_train // batch_size,
-    #     validation_data=valid_gen,
-    #     validation_steps=len_valid // batch_size,
-    #     callbacks=[
-    #         # model_checkpoint,
-    #         early_stopping,
-    #         reduce_lr,
-    #         lr_tracker
-    #     ],
-    #     workers=4,
-    #     use_multiprocessing=False,
-    #     verbose=1)
-    # end = time.time()
-    # print('trained model in {}'.format(end-start))
-    #
-    # del train, valid, y_train, y_valid
-    # gc.collect()
+
+    start = time.time()
+    model.fit_generator(
+        generator=train_gen,
+        epochs=30,
+        steps_per_epoch=len_train // batch_size,
+        validation_data=valid_gen,
+        validation_steps=len_valid // batch_size,
+        callbacks=[
+            model_checkpoint,
+            early_stopping,
+            reduce_lr,
+            lr_tracker
+        ],
+        workers=4,
+        use_multiprocessing=False,
+        verbose=1)
+    end = time.time()
+    print('trained model in {}'.format(end-start))
+
+    del train, valid, y_train, y_valid
+    gc.collect()
 
     model = load_model('model.model')
-    # # model = MobileNet()
-    # # model.load_weights('model.model')
-    # validate(model, label_index, valid_data_path)
-
-    validate(model, label_index, test_internal_data_path)
-
-    # #
+    # # # model = MobileNet()
+    # # # model.load_weights('model.model')
+    # # validate(model, label_index, valid_data_path)
+    #
+    # validate(model, label_index, test_internal_data_path)
+    #
+    # # #
     lp = LineProfiler()
     lp_wrapper = lp(get_predicts)
     index, results = lp_wrapper(model, label_index)

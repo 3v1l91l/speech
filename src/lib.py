@@ -101,6 +101,29 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
 
     return log_specgrams
 
+def get_specgrams_augment_silence(wavs, silences, unknowns):
+    if len(wavs) == 0:
+        print('err')
+    len_paths = len(wavs)
+    log_specgrams = [None]*len_paths
+    fs = 16000
+    duration = 1
+    for i in range(len(wavs)):
+        # wav = wavs[i]
+        # for x in np.random.randint(0, fs, 4):
+        #     unknown_overlap = unknowns[random.randint(0, len(unknowns)-1)]
+        #     unknown_overlap = pad(unknown_overlap, fs, duration)
+        #     wav = (1 - 0.5) * wav + (np.concatenate((unknown_overlap[x:],unknown_overlap[:x])) * 0.5)
+        # noise = silences[random.randint(0, len(silences)-1)]
+        # scale = np.random.uniform(low=0, high=0.3, size=1)
+        # wav = (1 - scale) * wav + (noise * scale)
+
+        wav = augment_unknown_silence(wavs[i], fs, silences, unknowns)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        # log_specgrams[i] = log_specgram(wav, fs)
+
+    return log_specgrams
+
 def get_specgrams_aug(wav):
     fs = 16000
     return log_specgram(augment_data(wav, fs), fs)[..., np.newaxis]
@@ -148,7 +171,7 @@ def spectrogram(wav, fs):
 #     return mfcc
 
 def log_specgram(audio, sr=16000):
-    n_mfcc = 10
+    n_mfcc = 40
     mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=int(0.02*sr), n_fft=int(0.04*sr))
     mean = np.mean(np.ravel(mfcc))
     std = np.std(np.ravel(mfcc))
@@ -233,10 +256,17 @@ def augment_unknown_data(y, sr, noises, unknowns, allow_speedandpitch = True, al
     length = y.shape[0]
     y_mod = y
     if random_onoff():
+        y_mod = np.flip(y_mod, axis=0)
+    if random_onoff():
         unknown = unknowns[random.randint(0, len(unknowns) - 1)]
         unknown = np.roll(unknown, np.random.randint(0, sr, 1))
-        scale = np.random.randint(0.5, 0.8, 1)
+        scale = np.random.uniform(0.5, 0.8, 1)
         y_mod = (1 - scale) * y_mod + (unknown * scale)
+    return y_mod
+
+def augment_unknown_silence(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
+    allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
+    y_mod = augment_data(y,sr,noises,unknowns)
     return y_mod
 
 def augment_data_valid(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,

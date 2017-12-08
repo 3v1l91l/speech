@@ -34,17 +34,35 @@ background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 
 def get_predicts(model, label_index):
-    fpaths = glob(os.path.join(test_data_path, '*wav'))[:2000]
+    fpaths = glob(os.path.join(test_data_path, '*wav'))
     index = []
     results = []
     batch = 128
+    count_cool_stuff = 0
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
-        predicts = model.predict(imgs)
-        predicts = np.argmax(predicts, axis=1)
-        predicts = [label_index[p] for p in predicts]
+        predicted_probabilities = model.predict(imgs)
+        # predict_max_index = np.argmax(predicted_probabilities, axis=1)
+        # predicts = [label_index[p] for p in predict_max_index]
+
+        unknown_label_index = int((label_index == 'unknown').nonzero()[0])
+        predict_max_indexes = []
+        for predicted_probability in predicted_probabilities:
+            predict_max_index = np.argmax(predicted_probability)
+
+            # if predict_max_index == unknown_label_index:    # try to come up with real label to replicate label distribution
+            #     predicted_probability_without_unknown = predicted_probability
+            #     predicted_probability_without_unknown[unknown_label_index] = 0
+            #     if(any(predicted_probability_without_unknown > 0.3)):
+            #         print(max(predicted_probability))
+            #         predict_max_index = np.argmax(predicted_probability_without_unknown)
+            #         count_cool_stuff = count_cool_stuff + 1
+
+            predict_max_indexes.append(predict_max_index)
+        predicts = [label_index[p] for p in predict_max_indexes]
+
         index.extend(fnames)
         results.extend(predicts)
-    return index, results
+    return index, results, count_cool_stuff
 
 def validate(model, label_index, path):
     zz = label_index == 'unknown'
@@ -134,23 +152,24 @@ def main():
     del train, valid, y_train, y_valid
     gc.collect()
 
-    model = load_model('model.model')
-    # # # model = MobileNet()
-    # # # model.load_weights('model.model')
-    # # validate(model, label_index, valid_data_path)
+    # model = load_model('model.model')
+    # # # # model = MobileNet()
+    # # # # model.load_weights('model.model')
+    # # # validate(model, label_index, valid_data_path)
+    # #
+    # # validate(model, label_index, test_internal_data_path)
+    # #
+    # # # #
+    # lp = LineProfiler()
+    # lp_wrapper = lp(get_predicts)
+    # index, results, count_cool_stuff = lp_wrapper(model, label_index)
+    # lp.print_stats()
     #
-    # validate(model, label_index, test_internal_data_path)
-    #
-    # # #
-    lp = LineProfiler()
-    lp_wrapper = lp(get_predicts)
-    index, results = lp_wrapper(model, label_index)
-    lp.print_stats()
-
-    df = pd.DataFrame(columns=['fname', 'label'])
-    df['fname'] = index
-    df['label'] = results
-    df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+    # df = pd.DataFrame(columns=['fname', 'label'])
+    # df['fname'] = index
+    # df['label'] = results
+    # df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+    # print('count_cool_stuff: {}'.format(count_cool_stuff))
 
 from keras import backend as K
 class LearningRateTracker(Callback):

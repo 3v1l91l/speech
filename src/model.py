@@ -131,8 +131,8 @@ def get_model():
 
 
 def MobileNet(alpha=1, shallow=True, classes=12):
-    # input_shape = (40, 51, 1)
-    input_shape = (10, 51, 1)
+    input_shape = (40, 51, 1)
+    # input_shape = (10, 51, 1)
     # input_shape = (40, 51)
     # img_input = Input(shape=input_shape)
 

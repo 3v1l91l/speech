@@ -193,6 +193,17 @@ def load_wav_by_path(p):
         wav = np.pad(wav, (L - wav.size, 0), mode='constant')
     else:
         wav = wav[0:L]
+
+    # loudest_section_dur = 0.4
+    # loudest_section_samples = int(loudest_section_dur * L)
+    # max_loudness = np.sum(wav[0:loudest_section_samples])
+    # max_loudness_ix = 0
+    # for i in range(0, L-loudest_section_samples):
+    #     if np.sum(wav[i:i+loudest_section_samples]) > max_loudness:
+    #         max_loudness_ix = i
+    # wav = np.concatenate(wav[max_loudness_ix:max_loudness_ix+loudest_section_samples], wav[0:max_loudness_ix],
+    #                      wav[max_loudness_ix+loudest_section_samples:])
+
     # wav = signal.resample(wav, 8000)
     mean = np.mean(np.ravel(wav))
     std = np.std(np.ravel(wav))

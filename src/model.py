@@ -193,32 +193,32 @@ def MobileNet(alpha=1, shallow=True, classes=12):
     x = Conv2D(276, (4, 10), strides=(2, 2), use_bias=False)(input)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(276, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(276, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(276, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(276, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(276, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
     x = Dense(classes, activation='softmax', name='predictions')(x)

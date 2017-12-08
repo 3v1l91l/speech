@@ -28,6 +28,7 @@ out_path = r'.'
 model_path = r'.'
 train_data_path = os.path.join(root_path, 'input', 'train', 'audio')
 valid_data_path = os.path.join(root_path, 'input', 'train', 'valid')
+test_internal_data_path = os.path.join(root_path, 'input', 'train', 'test')
 test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
 background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
@@ -78,15 +79,15 @@ def main():
     # y_train = np.array(y_train.values)
     # y_valid = np.array(y_valid.values)
     #
-    # # model = load_model('model.model')
+    # model = load_model('model.model')
     #
     # # model = get_model()
-    # model = MobileNet()
+    # # model = MobileNet()
     # # model.load_weights('model.model')
-    # model_checkpoint = ModelCheckpoint('model.model', monitor='val_loss', save_best_only=True, save_weights_only=False,
+    # model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
     #                                    verbose=1)
-    # early_stopping = EarlyStopping(monitor='val_loss', patience=4, verbose=1)
-    # reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=1, verbose=1)
+    # early_stopping = EarlyStopping(monitor='val_acc', patience=4, verbose=1)
+    # reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
     # lr_tracker = LearningRateTracker()
     #
     # start = time.time()
@@ -119,7 +120,7 @@ def main():
     #     validation_data=valid_gen,
     #     validation_steps=len_valid // batch_size,
     #     callbacks=[
-    #         model_checkpoint,
+    #         # model_checkpoint,
     #         early_stopping,
     #         reduce_lr,
     #         lr_tracker
@@ -136,17 +137,20 @@ def main():
     model = load_model('model.model')
     # # model = MobileNet()
     # # model.load_weights('model.model')
-    validate(model, label_index, valid_data_path)
+    # validate(model, label_index, valid_data_path)
+
+    validate(model, label_index, test_internal_data_path)
+
     # #
-    # lp = LineProfiler()
-    # lp_wrapper = lp(get_predicts)
-    # index, results = lp_wrapper(model, label_index)
-    # lp.print_stats()
-    #
-    # df = pd.DataFrame(columns=['fname', 'label'])
-    # df['fname'] = index
-    # df['label'] = results
-    # df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+    lp = LineProfiler()
+    lp_wrapper = lp(get_predicts)
+    index, results = lp_wrapper(model, label_index)
+    lp.print_stats()
+
+    df = pd.DataFrame(columns=['fname', 'label'])
+    df['fname'] = index
+    df['label'] = results
+    df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 from keras import backend as K
 class LearningRateTracker(Callback):

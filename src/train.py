@@ -5,7 +5,7 @@ from glob import glob
 import re
 import pandas as pd
 import gc
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, Callback
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from keras.models import load_model
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -163,18 +163,10 @@ def validate():
     validate(model, label_index, test_internal_data_path)
 
 def main():
-    train_model()
+    # train_model()
     validate()
-    make_predictions()
+    # make_predictions()
 
-from keras import backend as K
-class LearningRateTracker(Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        lr = self.model.optimizer.lr
-        decay = self.model.optimizer.decay
-        iterations = self.model.optimizer.iterations
-        lr_with_decay = lr / (1. + decay * K.cast(iterations, K.dtype(decay)))
-        print("Learning rate: {}".format(K.eval(lr_with_decay)))
 
 
 if __name__ == "__main__":

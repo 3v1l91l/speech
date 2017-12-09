@@ -4,9 +4,19 @@ import threading
 import math
 from multiprocessing import Pool
 import os
+from keras.callbacks import Callback
 
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 legal_labels_without_unknown = 'yes no up down left right on off stop go silence'.split()
+
+from keras import backend as K
+class LearningRateTracker(Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        lr = self.model.optimizer.lr
+        decay = self.model.optimizer.decay
+        iterations = self.model.optimizer.iterations
+        lr_with_decay = lr / (1. + decay * K.cast(iterations, K.dtype(decay)))
+        print("Learning rate: {}".format(K.eval(lr_with_decay)))
 
 class threadsafe_iter:
     """Takes an iterator/generator and makes it thread-safe by

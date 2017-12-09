@@ -163,8 +163,8 @@ def validate_predictions():
     validate(model, label_index, test_internal_data_path)
 
 def main():
-    # train_model()
-    # validate_predictions()
+    train_model()
+    validate_predictions()
     make_predictions()
 
 

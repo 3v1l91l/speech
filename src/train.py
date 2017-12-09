@@ -164,8 +164,8 @@ def validate_predictions():
 
 def main():
     # train_model()
-    validate_predictions()
-    # make_predictions()
+    # validate_predictions()
+    make_predictions()
 
 
 

@@ -157,14 +157,14 @@ def make_predictions():
     df['label'] = results
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
-def validate():
+def validate_predictions():
     train, valid, y_train, y_valid, label_index = get_data()
     model = load_model('model.model')
     validate(model, label_index, test_internal_data_path)
 
 def main():
     # train_model()
-    validate()
+    validate_predictions()
     # make_predictions()
 
 

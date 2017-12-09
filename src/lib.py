@@ -24,7 +24,6 @@ silence_paths = glob(os.path.join(train_data_path, 'silence', '*wav'))
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 
 def get_path_label_df(path, pattern='**' + os.sep + '*.wav'):
-    ''' Returns dataframe with columns: 'path', 'word'.'''
     datadir = Path(path)
     files = [(str(f), f.parts[-2]) for f in datadir.glob(pattern) if f]
     df = pd.DataFrame(files, columns=['path', 'word'])
@@ -32,9 +31,6 @@ def get_path_label_df(path, pattern='**' + os.sep + '*.wav'):
     return df
 
 def prepare_data(df):
-    '''
-    Remove _background_noise_ and replace not trained labels with unknown.
-    '''
     words = df.word.unique().tolist()
     unknown = [w for w in words if w not in legal_labels]
     df = df.drop(df[df.word.isin(['_background_noise_'])].index)
@@ -46,7 +42,6 @@ def get_specgrams(wavs):
     log_specgrams = [None] * len(wavs)
     fs = 16000
     for i in range(len(wavs)):
-        # log_specgrams[i] = log_specgram(wavs[i], fs)
         log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
     return log_specgrams
 
@@ -55,13 +50,8 @@ def get_specgrams_augment_known(wavs, silences, unknowns):
     log_specgrams = [None]*len_paths
     fs = 16000
     for i in range(len(wavs)):
-        # wav = wavs[i]
-        # noise = silences[random.randint(0, len(silences)-1)]
-        # scale = np.random.uniform(low=0, high=0.3, size=1)
-        # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data(wavs[i], fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
-        # log_specgrams[i] = log_specgram(wav, fs)
     return log_specgrams
 
 def get_specgrams_augment_known_valid(wavs, silences, unknowns):
@@ -69,13 +59,8 @@ def get_specgrams_augment_known_valid(wavs, silences, unknowns):
     log_specgrams = [None]*len_paths
     fs = 16000
     for i in range(len(wavs)):
-        # wav = wavs[i]
-        # noise = silences[random.randint(0, len(silences)-1)]
-        # scale = np.random.uniform(low=0, high=0.3, size=1)
-        # wav = (1 - scale) * wav + (noise * scale)
         wav = augment_data_valid(wavs[i], fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
-        # log_specgrams[i] = log_specgram(wav, fs)
     return log_specgrams
 
 def get_specgrams_augment_unknown(wavs, silences, unknowns):
@@ -86,19 +71,8 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        # wav = wavs[i]
-        # for x in np.random.randint(0, fs, 4):
-        #     unknown_overlap = unknowns[random.randint(0, len(unknowns)-1)]
-        #     unknown_overlap = pad(unknown_overlap, fs, duration)
-        #     wav = (1 - 0.5) * wav + (np.concatenate((unknown_overlap[x:],unknown_overlap[:x])) * 0.5)
-        # noise = silences[random.randint(0, len(silences)-1)]
-        # scale = np.random.uniform(low=0, high=0.3, size=1)
-        # wav = (1 - scale) * wav + (noise * scale)
-
         wav = augment_unknown_data(wavs[i], fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
-        # log_specgrams[i] = log_specgram(wav, fs)
-
     return log_specgrams
 
 def get_specgrams_augment_silence(wavs, silences, unknowns):
@@ -109,69 +83,12 @@ def get_specgrams_augment_silence(wavs, silences, unknowns):
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        # wav = wavs[i]
-        # for x in np.random.randint(0, fs, 4):
-        #     unknown_overlap = unknowns[random.randint(0, len(unknowns)-1)]
-        #     unknown_overlap = pad(unknown_overlap, fs, duration)
-        #     wav = (1 - 0.5) * wav + (np.concatenate((unknown_overlap[x:],unknown_overlap[:x])) * 0.5)
-        # noise = silences[random.randint(0, len(silences)-1)]
-        # scale = np.random.uniform(low=0, high=0.3, size=1)
-        # wav = (1 - scale) * wav + (noise * scale)
-
-        wav = augment_unknown_silence(wavs[i], fs, silences, unknowns)
+        wav = augment_silence(wavs[i], fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
-        # log_specgrams[i] = log_specgram(wav, fs)
-
     return log_specgrams
 
-def get_specgrams_aug(wav):
-    fs = 16000
-    return log_specgram(augment_data(wav, fs), fs)[..., np.newaxis]
-    # return log_specgram(augment_data(wav, fs), fs)
-
-def pad(wav, fs, duration):
-    if wav.size < fs:
-        wav = np.pad(wav, (fs * duration - wav.size, 0), mode='constant')
-    else:
-        wav = wav[0:fs * duration]
-    return wav
-
-def spectrogram(wav, fs):
-    return signal.spectrogram(wav, fs=fs, nperseg=256, noverlap=128)[2]
-
-# def log_specgram(audio, sample_rate=16000, window_size=20,
-#                  step_size=10, eps=1e-10):
-#     nperseg = int(round(window_size * sample_rate / 1e3))
-#     noverlap = int(round(step_size * sample_rate / 1e3))
-#     freqs, times, spec = signal.spectrogram(audio,
-#                                     fs=sample_rate,
-#                                     window='hann',
-#                                     nperseg=nperseg,
-#                                     noverlap=noverlap,
-#                                     detrend=False)
-#     data = np.log(spec.T.astype(np.float32) + eps)
-#     mean = np.mean(np.ravel(data))
-#     std = np.std(np.ravel(data))
-#     if std != 0:
-#         data = data - mean
-#         data = data / std
-#     return data
-
-
-# def log_specgram(audio, sample_rate=16000, window_size=20,
-#                  step_size=10, eps=1e-10):
-#     # wave, sr = librosa.load(file_path, mono=True, sr=None)
-#     # wave = wave[::3]
-#     mfcc = speechpy.feature.mfcc(audio, sampling_frequency=16000, num_cepstral=20)
-#     mean = np.mean(np.ravel(mfcc))
-#     std = np.std(np.ravel(mfcc))
-#     if std != 0:
-#         mfcc = mfcc - mean
-#         mfcc = mfcc / std
-#     return mfcc
-
 def log_specgram(audio, sr=16000):
-    n_mfcc = 40
+    n_mfcc = 10
     mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=int(0.02*sr), n_fft=int(0.04*sr))
     mean = np.mean(np.ravel(mfcc))
     std = np.std(np.ravel(mfcc))
@@ -179,40 +96,6 @@ def log_specgram(audio, sr=16000):
         mfcc = mfcc - mean
         mfcc = mfcc / std
     return mfcc
-
-def rescale(m):
-    #rescale by global max of absolute values
-    offset = m.min()
-    scale = m.max()-m.min()
-    return (m-offset)/scale
-
-# def log_specgram(audio, sample_rate=16000, window_size=20,
-#                  step_size=10, eps=1e-10):
-#     nperseg = int(round(window_size * sample_rate / 1e3))
-#     noverlap = int(round(step_size * sample_rate / 1e3))
-#     spec = librosa.feature.melspectrogram(audio, sr=sample_rate, n_mels=128)
-#     spec = librosa.power_to_db(spec, ref=np.max)
-#
-#     mean = np.mean(np.ravel(spec))
-#     std = np.std(np.ravel(spec))
-#     if std != 0:
-#         spec = spec - mean
-#         spec = spec / std
-#     return spec
-
-
-# def log_specgram(data, sr=16000):
-#     data = librosa.feature.melspectrogram(data, sr=sr, n_mels=40, hop_length=160, n_fft=480, fmin=20, fmax=4000)
-#     data[data > 0] = np.log(data[data > 0])
-#     # data = [np.matmul(librosa.filters.dct(40,40), x) for x in np.split(data, data.shape[1], axis=1)]
-#     # data = np.array(data, order="F").squeeze(2).astype(np.float32)
-#     mean = np.mean(np.ravel(data))
-#     std = np.std(np.ravel(data))
-#     if std != 0:
-#         data = data - mean
-#         data = data / std
-#
-    # return data
 
 def label_transform(labels):
     nlabels = []
@@ -257,14 +140,16 @@ def augment_unknown_data(y, sr, noises, unknowns, allow_speedandpitch = True, al
     y_mod = y
     if random_onoff():
         y_mod = np.flip(y_mod, axis=0)
-    if random_onoff():
-        unknown = unknowns[random.randint(0, len(unknowns) - 1)]
-        unknown = np.roll(unknown, np.random.randint(0, sr, 1))
-        scale = np.random.uniform(0.5, 0.8, 1)
-        y_mod = (1 - scale) * y_mod + (unknown * scale)
+    # if random_onoff():
+    #     unknown = unknowns[random.randint(0, len(unknowns) - 1)]
+    #     unknown = np.roll(unknown, np.random.randint(0, sr, 1))
+    #     scale = np.random.uniform(0.5, 0.8, 1)
+    #     y_mod = (1 - scale) * y_mod + (unknown * scale)
+    augment_data(y,sr,noises,unknowns)
+
     return y_mod
 
-def augment_unknown_silence(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
+def augment_silence(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
     allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
     y_mod = augment_data(y,sr,noises,unknowns)
     return y_mod
@@ -290,6 +175,23 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
     y_mod = y
 
     # add noise
+
+
+    # shift in time forwards or backwards
+    if  random_onoff():
+        shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.3))
+        y_mod = np.roll(y_mod, shift_samples_num)
+
+    # change speed and pitch together
+    if random_onoff():
+        length_change = np.random.uniform(low=0.7,high=1.3)
+        speed_fac = 1.0  / length_change
+        tmp = np.interp(np.arange(0,len(y),speed_fac),np.arange(0,len(y)),y)
+        #tmp = resample(y,int(length*lengt_fac))    # signal.resample is too slow
+        minlen = min( y.shape[0], tmp.shape[0])     # keep same length as original;
+        y_mod *= 0                                    # pad with zeros
+        y_mod[0:minlen] = tmp[0:minlen]
+
     if (allow_noise) and random_onoff():
         # noise_amp = 0.005*np.random.uniform()*np.amax(y)
         # if random_onoff():
@@ -299,25 +201,6 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
         noise = noises[random.randint(0, len(noises) - 1)]
         scale = np.random.uniform(low=0, high=0.25, size=1)
         y_mod = (1 - scale) * y_mod + (noise * scale)
-
-    # shift in time forwards or backwards
-    if (allow_timeshift) and random_onoff():
-        timeshift_fac = 0.3 *2*(np.random.uniform()-0.5)
-        start = int(length * timeshift_fac)
-        if (start > 0):
-            y_mod = np.pad(y_mod,(start,0),mode='constant')[0:y_mod.shape[0]]
-        else:
-            y_mod = np.pad(y_mod,(0,-start),mode='constant')[0:y_mod.shape[0]]
-
-    # change speed and pitch together
-    if (allow_speedandpitch) and random_onoff():
-        length_change = np.random.uniform(low=0.9,high=1.1)
-        speed_fac = 1.0  / length_change
-        tmp = np.interp(np.arange(0,len(y),speed_fac),np.arange(0,len(y)),y)
-        #tmp = resample(y,int(length*lengt_fac))    # signal.resample is too slow
-        minlen = min( y.shape[0], tmp.shape[0])     # keep same length as original;
-        y_mod *= 0                                    # pad with zeros
-        y_mod[0:minlen] = tmp[0:minlen]
 
     # change pitch (w/o speed)
     # if (allow_pitch) and random_onoff():

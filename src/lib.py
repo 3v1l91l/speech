@@ -71,7 +71,7 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        wav = augment_unknown_data(wavs[i], fs, silences, unknowns)
+        wav = augment_unknown(wavs[i], fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
@@ -88,8 +88,15 @@ def get_specgrams_augment_silence(wavs, silences, unknowns):
     return log_specgrams
 
 def log_specgram(audio, sr=16000):
-    n_mfcc = 10
-    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=int(0.02*sr), n_fft=int(0.04*sr))
+    n_mfcc = 40
+    # hop_length = int(0.02 * sr)
+    # n_fft = int(0.04 * sr)
+    window_size_ms = 30.0
+    window_stride_ms = 10.0
+    window_size_samples = int(sr * window_size_ms / 1000)
+    window_stride_samples = int(sr * window_stride_ms / 1000)
+
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
     mean = np.mean(np.ravel(mfcc))
     std = np.std(np.ravel(mfcc))
     if std != 0:
@@ -124,29 +131,22 @@ def load_wav_by_path(p):
     #                      wav[max_loudness_ix+loudest_section_samples:])
 
     # wav = signal.resample(wav, 8000)
-    mean = np.mean(np.ravel(wav))
-    std = np.std(np.ravel(wav))
-    if std != 0:
-        wav = wav - mean
-        wav = wav / std
+    # mean = np.mean(np.ravel(wav))
+    # std = np.std(np.ravel(wav))
+    # if std != 0:
+    #     wav = wav - mean
+    #     wav = wav / std
     return wav
 
 def random_onoff():                # randomly turns on or off
     return bool(random.getrandbits(1))
 
-def augment_unknown_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
-    allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
-    length = y.shape[0]
+def augment_unknown(y, sr, noises, unknowns):
     y_mod = y
     if random_onoff():
         y_mod = np.flip(y_mod, axis=0)
-    # if random_onoff():
-    #     unknown = unknowns[random.randint(0, len(unknowns) - 1)]
-    #     unknown = np.roll(unknown, np.random.randint(0, sr, 1))
-    #     scale = np.random.uniform(0.5, 0.8, 1)
-    #     y_mod = (1 - scale) * y_mod + (unknown * scale)
-    augment_data(y,sr,noises,unknowns)
 
+    augment_data(y_mod,sr,noises,unknowns)
     return y_mod
 
 def augment_silence(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
@@ -179,18 +179,18 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
 
     # shift in time forwards or backwards
     if  random_onoff():
-        shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.3))
+        shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.1))
         y_mod = np.roll(y_mod, shift_samples_num)
 
-    # change speed and pitch together
-    if random_onoff():
-        length_change = np.random.uniform(low=0.7,high=1.3)
-        speed_fac = 1.0  / length_change
-        tmp = np.interp(np.arange(0,len(y),speed_fac),np.arange(0,len(y)),y)
-        #tmp = resample(y,int(length*lengt_fac))    # signal.resample is too slow
-        minlen = min( y.shape[0], tmp.shape[0])     # keep same length as original;
-        y_mod *= 0                                    # pad with zeros
-        y_mod[0:minlen] = tmp[0:minlen]
+    # # change speed and pitch together
+    # if random_onoff():
+    #     length_change = np.random.uniform(low=0.7,high=1.3)
+    #     speed_fac = 1.0  / length_change
+    #     tmp = np.interp(np.arange(0,len(y),speed_fac),np.arange(0,len(y)),y)
+    #     #tmp = resample(y,int(length*lengt_fac))    # signal.resample is too slow
+    #     minlen = min( y.shape[0], tmp.shape[0])     # keep same length as original;
+    #     y_mod *= 0                                    # pad with zeros
+    #     y_mod[0:minlen] = tmp[0:minlen]
 
     if (allow_noise) and random_onoff():
         # noise_amp = 0.005*np.random.uniform()*np.amax(y)
@@ -199,7 +199,7 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
         # else:
         #     y_mod +=  noise_amp * np.random.normal(size=length)
         noise = noises[random.randint(0, len(noises) - 1)]
-        scale = np.random.uniform(low=0, high=0.25, size=1)
+        scale = np.random.uniform(low=0, high=0.1, size=1)
         y_mod = (1 - scale) * y_mod + (noise * scale)
 
     # change pitch (w/o speed)
@@ -218,8 +218,8 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
     #     y_mod[0:minlen] = tmp[0:minlen]
 
     # change dynamic range
-    if (allow_dyn) and random_onoff():
-        dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
-        y_mod = y_mod * dyn_change
+    # if (allow_dyn) and random_onoff():
+    #     dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
+    #     y_mod = y_mod * dyn_change
 
     return y_mod

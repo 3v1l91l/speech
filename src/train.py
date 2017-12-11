@@ -34,7 +34,7 @@ silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 
 def get_predicts(model, label_index):
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    fpaths = np.random.choice(fpaths, 10000)
+    # fpaths = np.random.choice(fpaths, 10000)
     index = []
     results = []
     batch = 128
@@ -99,7 +99,7 @@ def train_model():
 
     model = get_model()
     # model.load_weights('model.model')
-    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+    model_checkpoint = ModelCheckpoint('model2.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_acc', patience=4, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
@@ -115,22 +115,22 @@ def train_model():
     rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 200)]
     unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
 
-    train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
-    valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
+    # train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
+    # valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
     end = time.time()
     print('read files in {}'.format(end - start))
 
     batch_size = 128
-    train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
-    valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
-    # train_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
+    # train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
+    # valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
+    train_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
     # # valid_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
-    # valid_gen = batch_generator_paths(False, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
+    valid_gen = batch_generator_paths(False, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 
     start = time.time()
     model.fit_generator(
         generator=train_gen,
-        epochs=2,
+        epochs=20,
         steps_per_epoch=len_train // batch_size,
         validation_data=valid_gen,
         validation_steps=len_valid // batch_size,
@@ -163,9 +163,9 @@ def validate_predictions():
     validate(model, label_index, test_internal_data_path)
 
 def main():
-    train_model()
+    # train_model()
     validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 
 

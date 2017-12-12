@@ -32,7 +32,7 @@ test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
 background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 
-def get_predicts(model, label_index):
+def get_predicts(model, label_index, cool_guys):
     fpaths = glob(os.path.join(test_data_path, '*wav'))
     # fpaths = np.random.choice(fpaths, 1000)
     index = []
@@ -41,6 +41,7 @@ def get_predicts(model, label_index):
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
         predicted_probabilities = model.predict(imgs)
         predict_max_indexes = []
+        unknown_label_index = int((label_index == 'unknown').nonzero()[0])
         for predicted_probability in predicted_probabilities:
             predict_max_index = np.argmax(predicted_probability)
             # if predict_max_index == unknown_label_index:    # try to come up with real label to replicate label distribution
@@ -49,12 +50,15 @@ def get_predicts(model, label_index):
             #     if(any(predicted_probability_without_unknown > 0.3)):
             #         print(max(predicted_probability))
             #         predict_max_index = np.argmax(predicted_probability_without_unknown)
-
+            if max(predicted_probability) < 0.2:
+                cool_guys += 1
+            predict_max_index = unknown_label_index
             predict_max_indexes.append(predict_max_index)
         predicts = [label_index[p] for p in predict_max_indexes]
 
         index.extend(fnames)
         results.extend(predicts)
+    print('coll guys: %s' % cool_guys)
     return index, results
 
 def validate(model, label_index, path):
@@ -148,9 +152,9 @@ def train_model():
 
 def make_predictions():
     train, valid, y_train, y_valid, label_index = get_data()
-
+    cool_guys = 0
     model = load_model('model.model')
-    index, results = get_predicts(model, label_index)
+    index, results = get_predicts(model, label_index, cool_guys)
 
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
@@ -163,9 +167,9 @@ def validate_predictions():
     validate(model, label_index, test_internal_data_path)
 
 def main():
-    train_model()
+    # train_model()
     # validate_predictions()
-    # make_predictions()
+    make_predictions()
 
 
 

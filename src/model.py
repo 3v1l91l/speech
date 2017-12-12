@@ -61,27 +61,27 @@ def get_model(classes=12):
 
     input_shape = (40, 101, 1)
     input = Input(shape=input_shape)
-    x = Conv2D(256, (4, 10), strides=(2, 2), use_bias=False)(input)
+    x = Conv2D(256, (4, 4), strides=(2, 2), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(64, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(128, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(516, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)

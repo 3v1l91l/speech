@@ -8,7 +8,7 @@ dest_dir = os.path.join('..', 'input', 'submit_verify')
 if not os.path.exists(dest_dir):
     os.makedirs(dest_dir)
 
-df = pd.read_csv(r'sub.csv')
+df = pd.read_csv(r'sub.csv').iloc[:5000]
 for label in set(df.label):
     fnames = df.fname[df.label == label]
     if len(fnames) == 0:

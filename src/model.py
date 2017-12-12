@@ -90,7 +90,7 @@ def get_model(classes=12):
     x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
-    opt = optimizers.Adam(lr=0.003)
+    opt = optimizers.Adam(lr=0.005)
     # opt = optimizers.SGD(lr=0.1)
 
     model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])

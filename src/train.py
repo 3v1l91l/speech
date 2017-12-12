@@ -34,7 +34,7 @@ silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 
 def get_predicts(model, label_index):
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    # fpaths = np.random.choice(fpaths, 10000)
+    # fpaths = np.random.choice(fpaths, 1000)
     index = []
     results = []
     batch = 128
@@ -125,7 +125,7 @@ def train_model():
     # valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
     train_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
     # # valid_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
-    valid_gen = batch_generator_paths(False, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
+    valid_gen = batch_generator_paths(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 
     start = time.time()
     model.fit_generator(
@@ -165,7 +165,7 @@ def validate_predictions():
 def main():
     train_model()
     # validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 
 

@@ -6,8 +6,8 @@ import os
 train_dir = os.path.join('..', 'input', 'train')
 back_noise_dir = os.path.join('..', 'input', 'train')
 # silence_audio_dir = os.path.join(train_dir, 'audio', 'silence')
-silence_audio_dir = os.path.join(train_dir, 'valid','silence')
-# silence_audio_dir = os.path.join(train_dir, 'test','silence')
+# silence_audio_dir = os.path.join(train_dir, 'valid','silence')
+silence_audio_dir = os.path.join(train_dir, 'test','silence')
 
 if not os.path.exists(silence_audio_dir):
     os.makedirs(silence_audio_dir)

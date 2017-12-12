@@ -169,7 +169,7 @@ def augment_data_valid(y, sr, noises, unknowns, allow_speedandpitch = True, allo
     y_mod = y
 
     if random_onoff():
-        timeshift_fac = 0.3 *2*(np.random.uniform()-0.5)
+        timeshift_fac = 0.15 *2*(np.random.uniform()-0.5)
         start = int(length * timeshift_fac)
         if (start > 0):
             y_mod = np.pad(y_mod,(start,0),mode='constant')[0:y_mod.shape[0]]
@@ -186,20 +186,28 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
     # add noise
 
 
-    # shift in time forwards or backwards
-    # if  random_onoff():
-    shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.3))
-    y_mod = np.roll(y_mod, shift_samples_num)
+    # # shift in time forwards or backwards
+    # # if  random_onoff():
+    # shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.15))
+    # y_mod = np.roll(y_mod, shift_samples_num)
 
-    # # change speed and pitch together
-    # if random_onoff():
-    #     length_change = np.random.uniform(low=0.7,high=1.3)
-    #     speed_fac = 1.0  / length_change
-    #     tmp = np.interp(np.arange(0,len(y),speed_fac),np.arange(0,len(y)),y)
-    #     #tmp = resample(y,int(length*lengt_fac))    # signal.resample is too slow
-    #     minlen = min( y.shape[0], tmp.shape[0])     # keep same length as original;
-    #     y_mod *= 0                                    # pad with zeros
-    #     y_mod[0:minlen] = tmp[0:minlen]
+    if random_onoff():
+        timeshift_fac = 0.15 *2*(np.random.uniform()-0.5)
+        start = int(length * timeshift_fac)
+        if (start > 0):
+            y_mod = np.pad(y_mod,(start,0),mode='constant')[0:y_mod.shape[0]]
+        else:
+            y_mod = np.pad(y_mod,(0,-start),mode='constant')[0:y_mod.shape[0]]
+
+    # change speed and pitch together
+    if random_onoff():
+        length_change = np.random.uniform(low=0.7,high=1.3)
+        speed_fac = 1.0  / length_change
+        tmp = np.interp(np.arange(0,len(y),speed_fac),np.arange(0,len(y)),y)
+        #tmp = resample(y,int(length*lengt_fac))    # signal.resample is too slow
+        minlen = min( y.shape[0], tmp.shape[0])     # keep same length as original;
+        y_mod *= 0                                    # pad with zeros
+        y_mod[0:minlen] = tmp[0:minlen]
 
     if (allow_noise) and random_onoff():
         # noise_amp = 0.005*np.random.uniform()*np.amax(y)
@@ -209,7 +217,8 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
         #     y_mod +=  noise_amp * np.random.normal(size=length)
         noise = noises[random.randint(0, len(noises) - 1)]
         scale = np.random.uniform(low=0, high=0.2, size=1)
-        y_mod = (1 - scale) * y_mod + (noise * scale)
+        if np.max(noise) > 0 :
+            y_mod = (1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale)
 
     # change pitch (w/o speed)
     # if (allow_pitch) and random_onoff():

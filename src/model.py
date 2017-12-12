@@ -40,25 +40,56 @@ def get_model(classes=12):
     # x = Dense(classes, activation='softmax')(x)
 
 
+    # input_shape = (40, 101, 1)
+    #
+    # input = Input(shape=input_shape)
+    # x = Conv2D(64, (8, 20), strides=(1, 1), use_bias=True)(input)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.5)(x)
+    # x = MaxPooling2D(pool_size=(2, 2), strides=None, padding='same')(x)
+    #
+    # x = Conv2D(64, (4, 10), strides=(1, 1), use_bias=True)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.5)(x)
+    # x = MaxPooling2D(pool_size=(2, 2), strides=None, padding='same')(x)
+    #
+    # x = Flatten()(x)
+    # x = Dense(classes, activation='softmax')(x)
+    # model = Model(input, x)
+
     input_shape = (40, 101, 1)
-
     input = Input(shape=input_shape)
-    x = Conv2D(64, (8, 20), strides=(1, 1), use_bias=True)(input)
+    x = Conv2D(256, (4, 10), strides=(2, 2), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
-    x = MaxPooling2D(pool_size=(2, 2), strides=None, padding='same')(x)
+    x = Dropout(0.25)(x)
 
-    x = Conv2D(64, (4, 10), strides=(1, 1), use_bias=True)(x)
+    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
-    x = MaxPooling2D(pool_size=(2, 2), strides=None, padding='same')(x)
+    x = Dropout(0.25)(x)
 
-    x = Flatten()(x)
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = GlobalAveragePooling2D()(x)
     x = Dense(classes, activation='softmax')(x)
-    model = Model(input, x)
 
+    model = Model(input, x)
     opt = optimizers.Adam(lr=0.003)
     # opt = optimizers.SGD(lr=0.1)
 

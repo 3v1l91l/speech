@@ -100,7 +100,7 @@ def batch_generator_paths(should_augment, X_paths, y, y_label, silences, unknown
             specgrams.extend(get_specgrams(X[:len(unknown_ix)]))
         res_labels.extend(y[unknown_ix])
 
-        specgrams.extend(get_specgrams(X[len(unknown_ix):len(unknown_ix) + len(silence_ix)]))
+        specgrams.extend(get_specgrams_augment_silence(X[len(unknown_ix):len(unknown_ix) + len(silence_ix)], silences, unknowns))
         res_labels.extend(y[silence_ix])
 
         if should_augment:

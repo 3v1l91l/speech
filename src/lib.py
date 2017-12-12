@@ -45,6 +45,13 @@ def get_specgrams(wavs):
         log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
     return log_specgrams
 
+# def get_specgrams_silence(wavs):
+#     log_specgrams = [None] * len(wavs)
+#     fs = 16000
+#     for i in range(len(wavs)):
+#         log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
+#     return log_specgrams
+
 def get_specgrams_augment_known(wavs, silences, unknowns):
     len_paths = len(wavs)
     log_specgrams = [None]*len_paths
@@ -97,11 +104,11 @@ def log_specgram(audio, sr=16000):
     window_stride_samples = int(sr * window_stride_ms / 1000)
 
     mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
-    mean = np.mean(np.ravel(mfcc))
-    std = np.std(np.ravel(mfcc))
-    if std != 0:
-        mfcc = mfcc - mean
-        mfcc = mfcc / std
+    # mean = np.mean(np.ravel(mfcc))
+    # std = np.std(np.ravel(mfcc))
+    # if std != 0:
+    #     mfcc = mfcc - mean
+    #     mfcc = mfcc / std
     return mfcc
 
 def label_transform(labels):
@@ -151,7 +158,9 @@ def augment_unknown(y, sr, noises, unknowns):
 
 def augment_silence(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
     allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
-    y_mod = augment_data(y,sr,noises,unknowns)
+    y_mod = y
+    multiplier = np.random.uniform()
+    y_mod = y_mod * multiplier
     return y_mod
 
 def augment_data_valid(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
@@ -178,9 +187,9 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
 
 
     # shift in time forwards or backwards
-    if  random_onoff():
-        shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.1))
-        y_mod = np.roll(y_mod, shift_samples_num)
+    # if  random_onoff():
+    shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.3))
+    y_mod = np.roll(y_mod, shift_samples_num)
 
     # # change speed and pitch together
     # if random_onoff():
@@ -199,7 +208,7 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
         # else:
         #     y_mod +=  noise_amp * np.random.normal(size=length)
         noise = noises[random.randint(0, len(noises) - 1)]
-        scale = np.random.uniform(low=0, high=0.1, size=1)
+        scale = np.random.uniform(low=0, high=0.2, size=1)
         y_mod = (1 - scale) * y_mod + (noise * scale)
 
     # change pitch (w/o speed)

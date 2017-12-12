@@ -6,8 +6,8 @@ import os
 train_dir = os.path.join('..', 'input', 'train')
 back_noise_dir = os.path.join('..', 'input', 'train')
 # silence_audio_dir = os.path.join(train_dir, 'audio', 'silence')
-# silence_audio_dir = os.path.join(train_dir, 'valid','silence')
-silence_audio_dir = os.path.join(train_dir, 'test','silence')
+silence_audio_dir = os.path.join(train_dir, 'valid','silence')
+# silence_audio_dir = os.path.join(train_dir, 'test','silence')
 
 if not os.path.exists(silence_audio_dir):
     os.makedirs(silence_audio_dir)
@@ -22,8 +22,14 @@ count = 0
 for i in idx:
     sec_length = (wavs[i].shape[0] // fs) - 1
     sec_start = np.random.randint(0, sec_length)
-    # multiplier = np.random.rand()*0.00001
+    # multiplier = np.random.uniform()
     multiplier = 1
     gen_wav = multiplier * wavs[i][sec_start * fs : (sec_start+1) * fs]
     wavfile.write(os.path.join(silence_audio_dir, 'noise_' + str(count) + '.wav'), fs, gen_wav)
     count += 1
+
+for i in range(500):
+    gen_wav = np.array([0] * fs)
+    wavfile.write(os.path.join(silence_audio_dir, 'noise_' + str(count) + '.wav'), fs, gen_wav)
+    count += 1
+

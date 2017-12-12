@@ -79,7 +79,7 @@ def validate(model, label_index, path):
 
 def get_data():
     train = prepare_data(get_path_label_df(train_data_path))
-    valid = prepare_data(get_path_label_df(train_data_path))
+    valid = prepare_data(get_path_label_df(valid_data_path))
 
     len_train = len(train.word.values)
     temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
@@ -96,19 +96,19 @@ def train_model():
     len_train = len(train.word.values)
     len_valid = len(valid.word.values)
     # model = load_model('model.model')
-
+    #
     model = get_model()
     # model.load_weights('model.model')
-    model_checkpoint = ModelCheckpoint('model2.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
-    early_stopping = EarlyStopping(monitor='val_acc', patience=4, verbose=1)
+    early_stopping = EarlyStopping(monitor='val_acc', patience=10, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
     lr_tracker = LearningRateTracker()
 
     start = time.time()
     pool = Pool()
     silence_paths = train.path[train.word == 'silence']
-    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 200)]
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
 
     unknown_paths = train.path[train.word == 'unknown']
@@ -130,10 +130,10 @@ def train_model():
     start = time.time()
     model.fit_generator(
         generator=train_gen,
-        epochs=20,
-        steps_per_epoch=len_train // batch_size,
+        epochs=100,
+        steps_per_epoch=len_train // batch_size // 4,
         validation_data=valid_gen,
-        validation_steps=len_valid // batch_size,
+        validation_steps=len_valid // batch_size // 4,
         callbacks=[
             model_checkpoint,
             early_stopping,
@@ -163,9 +163,9 @@ def validate_predictions():
     validate(model, label_index, test_internal_data_path)
 
 def main():
-    # train_model()
-    validate_predictions()
-    # make_predictions()
+    train_model()
+    # validate_predictions()
+    make_predictions()
 
 
 

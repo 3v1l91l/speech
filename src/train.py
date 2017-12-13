@@ -41,7 +41,7 @@ def get_predicts(model, label_index, cool_guys):
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
         predicted_probabilities = model.predict(imgs)
         predict_max_indexes = []
-        unknown_label_index = int((label_index == 'unknown').nonzero()[0])
+        silence_label_index = int((label_index == 'silence').nonzero()[0])
         for predicted_probability in predicted_probabilities:
             predict_max_index = np.argmax(predicted_probability)
             # if predict_max_index == unknown_label_index:    # try to come up with real label to replicate label distribution
@@ -52,7 +52,7 @@ def get_predicts(model, label_index, cool_guys):
             #         predict_max_index = np.argmax(predicted_probability_without_unknown)
             if max(predicted_probability) < 0.2:
                 cool_guys += 1
-            predict_max_index = unknown_label_index
+                predict_max_index = silence_label_index
             predict_max_indexes.append(predict_max_index)
         predicts = [label_index[p] for p in predict_max_indexes]
 
@@ -99,9 +99,9 @@ def train_model():
     train, valid, y_train, y_valid, label_index = get_data()
     len_train = len(train.word.values)
     len_valid = len(valid.word.values)
-    # model = load_model('model.model')
+    model = load_model('model.model')
     #
-    model = get_model()
+    # model = get_model()
     # model.load_weights('model.model')
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
@@ -167,9 +167,9 @@ def validate_predictions():
     validate(model, label_index, test_internal_data_path)
 
 def main():
-    # train_model()
+    train_model()
     # validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 
 

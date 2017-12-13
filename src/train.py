@@ -128,7 +128,7 @@ def train_model():
     batch_size = 128
     # train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
     # valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
-    train_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
+    train_gen = batch_generator_paths(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
     # # valid_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
     valid_gen = batch_generator_paths(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 

@@ -80,10 +80,10 @@ def batch_generator(should_augment, X, y, y_label, silences, unknowns, batch_siz
         yield np.stack(specgrams), np.array(res_labels)
 
 @threadsafe_generator
-def batch_generator_paths(should_augment, X_paths, y, y_label, silences, unknowns, batch_size=16):
+def batch_generator_paths(validate, X_paths, y, y_label, silences, unknowns, batch_size=16):
     while True:
         # Try to represent classes distribution
-        batch_size_unknown = math.ceil(0.2 * batch_size)
+        batch_size_unknown = math.ceil(0.25 * batch_size)
         batch_size_silence = math.ceil(0.1 * batch_size)
         batch_size_known = batch_size - batch_size_unknown - batch_size_silence
         unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
@@ -93,21 +93,17 @@ def batch_generator_paths(should_augment, X_paths, y, y_label, silences, unknown
 
         specgrams = []
         res_labels = []
-        if should_augment:
+
+        if validate:
             specgrams.extend(get_specgrams_augment_unknown(X[:len(unknown_ix)], silences, unknowns))
-            # specgrams.extend(p.map(get_specgrams_aug, X[unknown_ix]))
         else:
-            specgrams.extend(get_specgrams(X[:len(unknown_ix)]))
+            specgrams.extend(get_specgrams_augment_known(X[:len(unknown_ix)], silences, unknowns))
         res_labels.extend(y[unknown_ix])
 
         specgrams.extend(get_specgrams_augment_silence(X[len(unknown_ix):len(unknown_ix) + len(silence_ix)], silences, unknowns))
         res_labels.extend(y[silence_ix])
 
-        if should_augment:
-            # specgrams.extend(p.map(get_specgrams_aug, X[known_ix]))
-            specgrams.extend(get_specgrams_augment_known(X[len(unknown_ix)+len(silence_ix):], silences, unknowns))
-        else:
-            specgrams.extend(get_specgrams(X[len(unknown_ix)+len(silence_ix):]))
+        specgrams.extend(get_specgrams_augment_known(X[len(unknown_ix)+len(silence_ix):], silences, unknowns))
         res_labels.extend(y[known_ix])
 
         # specgrams = get_specgrams_augment_unknown(X, silences, unknowns)

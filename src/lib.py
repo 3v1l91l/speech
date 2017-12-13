@@ -96,20 +96,22 @@ def get_specgrams_augment_silence(wavs, silences, unknowns):
 
 def log_specgram(audio, sr=16000):
     n_mfcc = 40
-    # hop_length = int(0.02 * sr)
-    # n_fft = int(0.04 * sr)
     window_size_ms = 30.0
     window_stride_ms = 10.0
     window_size_samples = int(sr * window_size_ms / 1000)
     window_stride_samples = int(sr * window_stride_ms / 1000)
+    #
+    # mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
 
-    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
+
+    logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
+
     # mean = np.mean(np.ravel(mfcc))
     # std = np.std(np.ravel(mfcc))
     # if std != 0:
     #     mfcc = mfcc - mean
     #     mfcc = mfcc / std
-    return mfcc
+    return logspec
 
 def label_transform(labels):
     nlabels = []

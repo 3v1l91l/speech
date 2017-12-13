@@ -99,9 +99,9 @@ def train_model():
     train, valid, y_train, y_valid, label_index = get_data()
     len_train = len(train.word.values)
     len_valid = len(valid.word.values)
-    model = load_model('model.model')
+    # model = load_model('model.model')
     #
-    # model = get_model()
+    model = get_model()
     # model.load_weights('model.model')
     model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
@@ -119,10 +119,9 @@ def train_model():
     rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 200)]
     unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
 
-    # train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
-    # valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
-    end = time.time()
-    print('read files in {}'.format(end - start))
+    train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
+    valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
+
 
     batch_size = 128
     # train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)

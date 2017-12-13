@@ -83,7 +83,7 @@ def batch_generator(should_augment, X, y, y_label, silences, unknowns, batch_siz
 def batch_generator_paths(should_augment, X_paths, y, y_label, silences, unknowns, batch_size=16):
     while True:
         # Try to represent classes distribution
-        batch_size_unknown = math.ceil(0.1 * batch_size)
+        batch_size_unknown = math.ceil(0.2 * batch_size)
         batch_size_silence = math.ceil(0.1 * batch_size)
         batch_size_known = batch_size - batch_size_unknown - batch_size_silence
         unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)

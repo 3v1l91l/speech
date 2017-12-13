@@ -5,7 +5,7 @@ from glob import glob
 import re
 import pandas as pd
 import gc
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TensorBoard
 from keras.models import load_model
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -107,6 +107,8 @@ def train_model():
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_acc', patience=10, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
+    tensorboard = TensorBoard(log_dir='./logs', write_graph=True)
+
     lr_tracker = LearningRateTracker()
 
     start = time.time()
@@ -141,7 +143,8 @@ def train_model():
             model_checkpoint,
             early_stopping,
             reduce_lr,
-            lr_tracker
+            lr_tracker,
+            tensorboard
         ],
         workers=4,
         use_multiprocessing=False,

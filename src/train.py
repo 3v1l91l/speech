@@ -18,10 +18,13 @@ import math
 from generator import *
 # import lightgbm as lgb
 
-from model import get_model
+from model import *
 
 L = 16000
+batch_size = 128
+silence_labels = ['silence']
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
+known_labels = 'yes no up down left right on off stop go'.split()
 root_path = r'..'
 out_path = r'.'
 model_path = r'.'
@@ -81,9 +84,13 @@ def validate(model, label_index, path):
     print('=======')
     print('Overall correctly predicted: {}%'.format(100 * all_correct_count / len(all_fpaths)))
 
-def get_data():
+def get_train_valid_df():
     train = prepare_data(get_path_label_df(train_data_path))
     valid = prepare_data(get_path_label_df(valid_data_path))
+    return train, valid
+
+def get_data():
+    train, valid = get_train_valid_df()
 
     len_train = len(train.word.values)
     temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
@@ -95,24 +102,36 @@ def get_data():
 
     return train, valid, y_train, y_valid, label_index
 
+def get_data_silence_not_silence():
+    train, valid = get_train_valid_df()
+
+    len_train = len(train.word.values)
+    train.word[train.word != 'silence'] = 'not_silence'
+    valid.word[valid.word != 'silence'] = 'not_silence'
+    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
+    y_train, y_valid = temp[:len_train], temp[len_train:]
+
+    label_index = y_train.columns.values
+    y_train = np.array(y_train.values)
+    y_valid = np.array(y_valid.values)
+
+    return train, valid, y_train, y_valid, label_index
+
 def train_model():
     train, valid, y_train, y_valid, label_index = get_data()
+    y_train_words = train.word
+    y_valid_words = valid.word
     len_train = len(train.word.values)
     len_valid = len(valid.word.values)
-    # model = load_model('model.model')
-    #
-    model = get_model()
-    # model.load_weights('model.model')
-    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
-                                       verbose=1)
     early_stopping = EarlyStopping(monitor='val_acc', patience=10, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
-    tensorboard = TensorBoard(log_dir='./logs', write_graph=True)
-
     lr_tracker = LearningRateTracker()
+    # tensorboard = TensorBoard(log_dir='./logs', write_graph=True)
 
-    start = time.time()
+    ## read wavs beforehand
     pool = Pool()
+    # train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
+    # valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
     silence_paths = train.path[train.word == 'silence']
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
@@ -121,18 +140,52 @@ def train_model():
     rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 200)]
     unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
 
-    train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
-    valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
+    ## silence model
+    train_silence, valid_silence, y_train_silence, y_valid_silence, label_index_silence = get_data_silence_not_silence()
+
+    # y_train_words_silence = [y if y == 'silence' else 'not_silence' for y in y_train_words_silence]
+    model_checkpoint = ModelCheckpoint('model_silence.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+                                       verbose=1)
+    model_silence = get_silence_model()
+    train_gen = batch_generator_paths_silence(False, train_silence.path.values, y_train_silence, train_silence.word, silences, unknowns,
+                                      batch_size=batch_size)
+    valid_gen = batch_generator_paths_silence(True, valid_silence.path.values, y_valid_silence, valid_silence.word, silences, unknowns,
+                                      batch_size=batch_size)
+    model_silence.fit_generator(
+        generator=train_gen,
+        epochs=100,
+        steps_per_epoch=len_train // batch_size // 4,
+        validation_data=valid_gen,
+        validation_steps=len_valid // batch_size // 4,
+        callbacks=[
+            model_checkpoint,
+            early_stopping,
+            reduce_lr,
+            lr_tracker,
+            # tensorboard
+        ],
+        workers=4,
+        use_multiprocessing=False,
+        verbose=1)
+
+    # model = load_model('model.model')
+    #
+    model = get_model()
+    # model.load_weights('model.model')
+    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+                                       verbose=1)
 
 
-    batch_size = 128
+
+
+
+
+
     # train_gen = batch_generator(True, train_wavs, y_train, train.word, silences, unknowns, batch_size=batch_size)
     # valid_gen = batch_generator(False, valid_wavs, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
     train_gen = batch_generator_paths(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
-    # # valid_gen = batch_generator_paths(True, train.path.values, y_train, train.word, silences, unknowns, batch_size=batch_size)
     valid_gen = batch_generator_paths(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=batch_size)
 
-    start = time.time()
     model.fit_generator(
         generator=train_gen,
         epochs=100,
@@ -144,13 +197,11 @@ def train_model():
             early_stopping,
             reduce_lr,
             lr_tracker,
-            tensorboard
+            # tensorboard
         ],
         workers=4,
         use_multiprocessing=False,
         verbose=1)
-    end = time.time()
-    print('trained model in {}'.format(end - start))
 
 def make_predictions():
     train, valid, y_train, y_valid, label_index = get_data()

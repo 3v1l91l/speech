@@ -43,28 +43,28 @@ def get_specgrams(wavs):
     log_specgrams = [None] * len(wavs)
     fs = 16000
     for i in range(len(wavs)):
-        log_specgrams[i] = log_specgram(wavs[i], fs)#[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_known(wavs, silences, unknowns):
+def get_specgrams_augment_known(wavs, silences):
     len_paths = len(wavs)
     log_specgrams = [None]*len_paths
     fs = 16000
     for i in range(len(wavs)):
-        wav = augment_data(wavs[i], fs, silences, unknowns)
-        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
+        wav = augment_data(wavs[i], fs, silences)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_known_valid(wavs, silences, unknowns):
+def get_specgrams_augment_known_valid(wavs, silences):
     len_paths = len(wavs)
     log_specgrams = [None]*len_paths
     fs = 16000
     for i in range(len(wavs)):
-        wav = augment_data_valid(wavs[i], fs, silences, unknowns)
-        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
+        wav = augment_data_valid(wavs[i], fs, silences)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_unknown(wavs, unknown_flip_known_ix, silences, unknowns):
+def get_specgrams_augment_unknown(wavs, silences):
     if len(wavs) == 0:
         print('err')
     len_paths = len(wavs)
@@ -72,11 +72,11 @@ def get_specgrams_augment_unknown(wavs, unknown_flip_known_ix, silences, unknown
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        wav = augment_unknown(wavs[i], i in unknown_flip_known_ix, fs, silences, unknowns)
-        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
+        wav = augment_unknown(wavs[i], fs, silences)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_silence(wavs, silences, unknowns):
+def get_specgrams_augment_silence(wavs, silences):
     if len(wavs) == 0:
         print('err')
     len_paths = len(wavs)
@@ -84,8 +84,8 @@ def get_specgrams_augment_silence(wavs, silences, unknowns):
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        wav = augment_silence(wavs[i], fs, silences, unknowns)
-        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
+        wav = augment_silence(wavs[i], fs, silences)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
 def log_specgram(audio, sr=16000):
@@ -98,8 +98,7 @@ def log_specgram(audio, sr=16000):
     # mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
 
     logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.030, frame_stride=0.01,
-             num_filters=40, fft_length=512, low_frequency=0)#, high_frequency=5500)
-    # logspec = np.swapaxes(logspec, 0, 2)
+             num_filters=40, fft_length=512, low_frequency=0, high_frequency=5500)
     # logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
 
     # mean = np.mean(np.ravel(mfcc))
@@ -146,24 +145,20 @@ def load_wav_by_path(p):
 def random_onoff():                # randomly turns on or off
     return bool(random.getrandbits(1))
 
-def augment_unknown(y, surely_flip, sr, noises, unknowns):
+def augment_unknown(y, sr, noises):
     y_mod = y
-    if surely_flip:
-        y_mod = np.flip(y_mod, axis=0)
-    elif random_onoff():
+    if random_onoff():
         y_mod = np.flip(y_mod, axis=0)
 
-    augment_data(y_mod,sr,noises,unknowns)
+    augment_data(y_mod,sr,noises)
     return y_mod
 
-def augment_silence(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
+def augment_silence(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
-    y_mod = y
-    multiplier = np.random.uniform()
-    y_mod = y_mod * multiplier
+    y_mod = augment_data(y, sr, noises)
     return y_mod
 
-def augment_data_valid(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
+def augment_data_valid(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
     length = y.shape[0]
     y_mod = y
@@ -178,7 +173,7 @@ def augment_data_valid(y, sr, noises, unknowns, allow_speedandpitch = True, allo
     return y_mod
 
 
-def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitch = True,
+def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
     length = y.shape[0]
     y_mod = y
@@ -209,7 +204,7 @@ def augment_data(y, sr, noises, unknowns, allow_speedandpitch = True, allow_pitc
         y_mod *= 0                                    # pad with zeros
         y_mod[0:minlen] = tmp[0:minlen]
 
-    if (allow_noise) and random_onoff():
+    if (len(noises) > 0) and random_onoff():
         # noise_amp = 0.005*np.random.uniform()*np.amax(y)
         # if random_onoff():
         #     y_mod +=  noise_amp * np.random.normal(size=length)

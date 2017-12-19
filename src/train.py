@@ -42,16 +42,17 @@ def get_predicts(model, label_index, cool_guys):
         predicted_probabilities = model.predict(imgs)
         predict_max_indexes = []
         silence_label_index = int((label_index == 'silence').nonzero()[0])
-        for predicted_probability in predicted_probabilities:
-            predict_max_index = np.argmax(predicted_probability)
+        for i in range(len(predicted_probabilities)):
+            predict_max_index = np.argmax(predicted_probabilities[i])
             # if predict_max_index == unknown_label_index:    # try to come up with real label to replicate label distribution
             #     predicted_probability_without_unknown = predicted_probability
             #     predicted_probability_without_unknown[unknown_label_index] = 0
             #     if(any(predicted_probability_without_unknown > 0.3)):
             #         print(max(predicted_probability))
             #         predict_max_index = np.argmax(predicted_probability_without_unknown)
-            if max(predicted_probability) < 0.2:
+            if max(predicted_probabilities[i]) < 0.2:
                 cool_guys += 1
+                print(fnames[i])
                 predict_max_index = silence_label_index
             predict_max_indexes.append(predict_max_index)
         predicts = [label_index[p] for p in predict_max_indexes]
@@ -103,7 +104,7 @@ def train_model():
     #
     model = get_model()
     # model.load_weights('model.model')
-    model_checkpoint = ModelCheckpoint('model.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
+    model_checkpoint = ModelCheckpoint('model2.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_acc', patience=10, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
@@ -121,8 +122,8 @@ def train_model():
     rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 200)]
     unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
 
-    train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
-    valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
+    # train_wavs = np.array(list(pool.imap(load_wav_by_path, train.path.values)))
+    # valid_wavs = np.array(list(pool.imap(load_wav_by_path, valid.path.values)))
 
 
     batch_size = 128
@@ -172,8 +173,6 @@ def main():
     train_model()
     # validate_predictions()
     # make_predictions()
-
-
 
 if __name__ == "__main__":
     main()

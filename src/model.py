@@ -59,34 +59,43 @@ def get_model(classes=12):
     # x = Dense(classes, activation='softmax')(x)
     # model = Model(input, x)
 
-    input_shape = (40, 101, 1)
+    # input_shape = (98, 40, 1)
+    # input = Input(shape=input_shape)
+    # x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # # x = Dropout(0.25)(x)
+
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # # x = Dropout(0.25)(x)
+
+    # x = GlobalAveragePooling2D()(x)
+    # x = Dense(classes, activation='softmax')(x)
+
+    # input_shape = (98, 40, 1)
+    input_shape = (98, 40)
     input = Input(shape=input_shape)
-    x = Conv2D(256, (4, 10), strides=(2, 2), use_bias=False)(input)
-    x = Activation('relu')(x)
+    x = GRU(units=40, activation='relu', input_shape=(None, 98, 40))(input)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
+    x = GRU(units=40, activation='relu', input_shape=(None, 98, 40))(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(500, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = GlobalAveragePooling2D()(x)
     x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)

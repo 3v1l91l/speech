@@ -3,7 +3,7 @@ from keras.layers import SeparableConv2D, GRU, Reshape, GlobalAveragePooling2D, 
 from keras.models import Sequential, Model
 from keras.layers.advanced_activations import ELU
 
-def get_model(classes=10):
+def get_model(classes=12):
     input_shape = (98, 40, 1)
     input = Input(shape=input_shape)
     x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)

@@ -95,17 +95,17 @@ def log_specgram(audio, sr=16000):
     window_size_samples = int(sr * window_size_ms / 1000)
     window_stride_samples = int(sr * window_stride_ms / 1000)
     #
-    # mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
+    # logspec = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
 
     logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.030, frame_stride=0.01,
              num_filters=40, fft_length=512, low_frequency=0, high_frequency=5500)
     # logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
 
-    # mean = np.mean(np.ravel(mfcc))
-    # std = np.std(np.ravel(mfcc))
-    # if std != 0:
-    #     mfcc = mfcc - mean
-    #     mfcc = mfcc / std
+    mean = np.mean(np.ravel(logspec))
+    std = np.std(np.ravel(logspec))
+    if std != 0:
+        logspec = logspec - mean
+        logspec = logspec / std
     return logspec
 
 def label_transform(labels):

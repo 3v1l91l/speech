@@ -37,7 +37,7 @@ BATCH_SIZE = 128
 
 
 def validate_old():
-    _, _, _, _, label_index = get_data_old()
+    _, _, _, _, label_index, _ = get_data_old()
     model = load_model('model_old.model')
     valid = prepare_data(get_path_label_df(test_internal_data_path))
     _, results = get_predicts_old(valid.path.values, model, label_index)
@@ -129,6 +129,27 @@ def get_data():
 
     return train, valid, y_train, y_valid, label_index, silence_paths
 
+def get_data_known_unknown():
+    train, valid = get_train_valid_df()
+    silence_paths = train.path[train.word == 'silence']
+    train.drop(train[~train.word.isin(recognized_labels)].index, inplace=True)
+    valid.drop(valid[~valid.word.isin(recognized_labels)].index, inplace=True)
+    train.reset_index(inplace=True)
+    valid.reset_index(inplace=True)
+
+    train.loc[train.word != 'unknown', 'word'] = ['known']
+    valid.loc[valid.word != 'unknown', 'word'] = ['known']
+
+    len_train = len(train.word.values)
+    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
+    y_train, y_valid = temp[:len_train], temp[len_train:]
+
+    label_index = y_train.columns.values
+    y_train = np.array(y_train.values)
+    y_valid = np.array(y_valid.values)
+
+    return train, valid, y_train, y_valid, label_index, silence_paths
+
 def get_data_old():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
@@ -185,6 +206,27 @@ def train_silence_model():
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
         callbacks=get_callbacks('model_silence'),
+        workers=4,
+        use_multiprocessing=False,
+        verbose=1
+    )
+
+def train_unknown_model():
+    train, valid, y_train, y_valid, label_index, silence_paths = get_data_known_unknown()
+    pool = Pool()
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
+    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
+
+    silence_model = get_silence_model()
+    train_gen = batch_generator_unknown_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_unknown_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
+    silence_model.fit_generator(
+        generator=train_gen,
+        epochs=10,
+        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
+        validation_data=valid_gen,
+        validation_steps=len(y_valid) // BATCH_SIZE // 4,
+        callbacks=get_callbacks('model_unknown'),
         workers=4,
         use_multiprocessing=False,
         verbose=1
@@ -259,9 +301,10 @@ def validate_predictions():
     validate(test_internal_data_path, model, silence_model, silence_label_index, label_index)
 
 def main():
+    train_unknown_model()
     # train_silence_model()
     # train_model()
-    train_model_old()
+    # train_model_old()
     # validate_predictions()
     # validate_old()
     # make_predictions()

@@ -74,6 +74,27 @@ def batch_generator_silence_paths(X_paths, y, y_label, silences, batch_size=128)
         res_labels = np.concatenate((y[unknown_ix], y[silence_ix]))
         yield np.stack(specgrams), res_labels
 
+@threadsafe_generator
+def batch_generator_unknown_paths(X_paths, y, y_label, silences, batch_size=128):
+    while True:
+        # Try to represent classes distribution
+        batch_size_unknown = math.ceil(0.5 * batch_size)
+        batch_size_silence = batch_size - batch_size_unknown
+        unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
+        known_ix = np.random.choice(y_label[y_label == 'known'].index, size=batch_size_silence)
+        X = list(map(load_wav_by_path, np.concatenate((X_paths[unknown_ix], X_paths[known_ix]))))
+
+        specgrams = []
+        res_labels = []
+        specgrams.extend(get_specgrams_augment_unknown(X[:len(unknown_ix)], silences))
+        res_labels.extend(y[unknown_ix])
+
+        specgrams.extend(get_specgrams_augment_silence(X[len(unknown_ix):], silences))
+        res_labels.extend(y[known_ix])
+
+        res_labels = np.concatenate((y[unknown_ix], y[known_ix]))
+        yield np.stack(specgrams), res_labels
+
 def test_data_generator(fpaths, batch=16):
     i = 0
     for path in fpaths:

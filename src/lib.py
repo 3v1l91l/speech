@@ -22,7 +22,7 @@ test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
 background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_', '*wav'))
 silence_paths = glob(os.path.join(train_data_path, 'silence', '*wav'))
 
-legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
+legal_labels = 'yes no up down left right on off stop go silence unknown known'.split()
 
 def get_path_label_df(path, pattern='**' + os.sep + '*.wav'):
     datadir = Path(path)
@@ -72,7 +72,19 @@ def get_specgrams_augment_unknown(wavs, silences):
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        wav = augment_unknown(wavs[i], fs, silences)
+        wav = augment_unknown(wavs[i], False, fs, silences)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+    return log_specgrams
+
+def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences):
+    if len(wavs) == 0:
+        print('err')
+    len_paths = len(wavs)
+    log_specgrams = [None]*len_paths
+    fs = 16000
+    duration = 1
+    for i in range(len(wavs)):
+        wav = augment_unknown(wavs[i], i in unknown_flip_known_ix, fs, silences)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
@@ -145,9 +157,11 @@ def load_wav_by_path(p):
 def random_onoff():                # randomly turns on or off
     return bool(random.getrandbits(1))
 
-def augment_unknown(y, sr, noises):
+def augment_unknown(y, surely_flip, sr, noises):
     y_mod = y
-    if random_onoff():
+    if surely_flip:
+        y_mod = np.flip(y_mod, axis=0)
+    elif random_onoff():
         y_mod = np.flip(y_mod, axis=0)
 
     augment_data(y_mod,sr,noises)

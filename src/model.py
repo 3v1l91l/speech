@@ -36,7 +36,10 @@ def get_model(classes=12):
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
-    model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
+    loss = losses.categorical_crossentropy
+    if classes == 2:
+        loss = losses.binary_crossentropy
+    model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
     return model
 
 

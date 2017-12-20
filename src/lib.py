@@ -110,14 +110,14 @@ def log_specgram(audio, sr=16000):
     # logspec = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
 
     logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.030, frame_stride=0.01,
-             num_filters=40, fft_length=512, low_frequency=0, high_frequency=5500)
+             num_filters=40, fft_length=512, low_frequency=0)#, high_frequency=5500)
     # logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
 
-    mean = np.mean(np.ravel(logspec))
-    std = np.std(np.ravel(logspec))
-    if std != 0:
-        logspec = logspec - mean
-        logspec = logspec / std
+    # mean = np.mean(np.ravel(logspec))
+    # std = np.std(np.ravel(logspec))
+    # if std != 0:
+    #     logspec = logspec - mean
+    #     logspec = logspec / std
     return logspec
 
 def label_transform(labels):
@@ -147,11 +147,11 @@ def load_wav_by_path(p):
     #                      wav[max_loudness_ix+loudest_section_samples:])
 
     # wav = signal.resample(wav, 8000)
-    mean = np.mean(np.ravel(wav))
-    std = np.std(np.ravel(wav))
-    if std != 0:
-        wav = wav - mean
-        wav = wav / std
+    # mean = np.mean(np.ravel(wav))
+    # std = np.std(np.ravel(wav))
+    # if std != 0:
+    #     wav = wav - mean
+    #     wav = wav / std
     return wav
 
 def random_onoff():                # randomly turns on or off
@@ -192,14 +192,6 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     length = y.shape[0]
     y_mod = y
 
-    # add noise
-
-
-    # # shift in time forwards or backwards
-    # # if  random_onoff():
-    # shift_samples_num = int(((-1) ** random.randrange(2)) * sr * random.uniform(0, 0.15))
-    # y_mod = np.roll(y_mod, shift_samples_num)
-
     if random_onoff():
         timeshift_fac = 0.15 *2*(np.random.uniform()-0.5)
         start = int(length * timeshift_fac)
@@ -208,45 +200,32 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         else:
             y_mod = np.pad(y_mod,(0,-start),mode='constant')[0:y_mod.shape[0]]
 
-    # change speed and pitch together
-    if random_onoff():
-        length_change = np.random.uniform(low=0.7,high=1.3)
-        speed_fac = 1.0  / length_change
-        tmp = np.interp(np.arange(0,len(y),speed_fac),np.arange(0,len(y)),y)
-        #tmp = resample(y,int(length*lengt_fac))    # signal.resample is too slow
-        minlen = min( y.shape[0], tmp.shape[0])     # keep same length as original;
-        y_mod *= 0                                    # pad with zeros
-        y_mod[0:minlen] = tmp[0:minlen]
-
     if (len(noises) > 0) and random_onoff():
-        # noise_amp = 0.005*np.random.uniform()*np.amax(y)
-        # if random_onoff():
-        #     y_mod +=  noise_amp * np.random.normal(size=length)
-        # else:
-        #     y_mod +=  noise_amp * np.random.normal(size=length)
         noise = noises[random.randint(0, len(noises) - 1)]
         scale = np.random.uniform(low=0, high=0.2, size=1)
         if np.max(noise) > 0 :
-            y_mod = (1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale)
+            y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
 
     # change pitch (w/o speed)
-    # if (allow_pitch) and random_onoff():
-    #     bins_per_octave = 24        # pitch increments are quarter-steps
-    #     pitch_pm = 4                                # +/- this many quarter steps
-    #     pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
-    #     y_mod = librosa.effects.pitch_shift(y, sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
+    if (allow_pitch) and random_onoff():
+        bins_per_octave = 24        # pitch increments are quarter-steps
+        pitch_pm = 4                                # +/- this many quarter steps
+        pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
+        y_mod = librosa.effects.pitch_shift(np.array(y_mod, dtype=np.float), sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
+        y_mod = np.array(y_mod, dtype=np.int16)
 
     # change speed (w/o pitch),
-    # if (allow_speed) and random_onoff():
-    #     speed_change = np.random.uniform(low=0.9,high=1.1)
-    #     tmp = librosa.effects.time_stretch(y_mod, speed_change)
-    #     minlen = min( y.shape[0], tmp.shape[0])        # keep same length as original;
-    #     y_mod *= 0                                    # pad with zeros
-    #     y_mod[0:minlen] = tmp[0:minlen]
+    if (allow_speed) and random_onoff():
+        speed_change = np.random.uniform(low=0.8,high=1.2)
+        tmp = librosa.effects.time_stretch(np.array(y_mod, dtype=np.float), speed_change)
+        tmp = np.array(tmp, dtype=np.int16)
+        minlen = min( y.shape[0], tmp.shape[0])        # keep same length as original;
+        y_mod *= 0                                    # pad with zeros
+        y_mod[0:minlen] = tmp[0:minlen]
 
-    # change dynamic range
-    # if (allow_dyn) and random_onoff():
-    #     dyn_change = np.random.uniform(low=0.5,high=1.1)  # change amplitude
-    #     y_mod = y_mod * dyn_change
+        #change dynamic range
+        if (allow_dyn) and random_onoff():
+            dyn_change = np.random.uniform(low=0.5,high=1.5)  # change amplitude
+            y_mod = np.array(y_mod * dyn_change, dtype=np.int16)
 
     return y_mod

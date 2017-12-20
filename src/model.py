@@ -6,36 +6,37 @@ from keras.layers.advanced_activations import ELU
 def get_model(classes=12):
     input_shape = (98, 40, 1)
     input = Input(shape=input_shape)
-    x = Conv2D(256, (4, 4), strides=(2, 2), use_bias=False)(input)
+    x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
-    x = SeparableConv2D(512, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
-    x = SeparableConv2D(1024, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
-    opt = optimizers.Adam(lr=0.01)
+    opt = optimizers.Adam(lr=0.005)
+    # opt = optimizers.Adadelta()
     loss = losses.categorical_crossentropy
     if classes == 2:
         loss = losses.binary_crossentropy

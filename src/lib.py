@@ -164,7 +164,12 @@ def augment_unknown(y, surely_flip, sr, noises):
     elif random_onoff():
         y_mod = np.flip(y_mod, axis=0)
 
-    augment_data(y_mod,sr,noises)
+    # just mess it up all the way!
+    if random_onoff():
+        y_mod = 0.5 * y_mod +  0.5 * np.roll(np.flip(y_mod, axis=0), int(sr * np.random.uniform(0.1, 0.5, 1)))
+        y_mod = np.array(y_mod, dtype=np.int16)
+
+    augment_data(y_mod, sr, noises)
     return y_mod
 
 def augment_silence(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
@@ -206,26 +211,34 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         if np.max(noise) > 0 :
             y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
 
-    # change pitch (w/o speed)
-    if (allow_pitch) and random_onoff():
-        bins_per_octave = 24        # pitch increments are quarter-steps
-        pitch_pm = 4                                # +/- this many quarter steps
-        pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
-        y_mod = librosa.effects.pitch_shift(np.array(y_mod, dtype=np.float), sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
-        y_mod = np.array(y_mod, dtype=np.int16)
-
-    # change speed (w/o pitch),
-    if (allow_speed) and random_onoff():
-        speed_change = np.random.uniform(low=0.8,high=1.2)
-        tmp = librosa.effects.time_stretch(np.array(y_mod, dtype=np.float), speed_change)
-        tmp = np.array(tmp, dtype=np.int16)
-        minlen = min( y.shape[0], tmp.shape[0])        # keep same length as original;
-        y_mod *= 0                                    # pad with zeros
+    if (allow_speedandpitch) and random_onoff():
+        length_change = np.random.uniform(low=0.8, high=1.3)
+        speed_fac = 1.0 / length_change
+        tmp = np.interp(np.arange(0, len(y), speed_fac), np.arange(0, len(y)), y)
+        minlen = min(y.shape[0], tmp.shape[0])  # keep same length as original;
+        y_mod *= 0  # pad with zeros
         y_mod[0:minlen] = tmp[0:minlen]
 
-        #change dynamic range
-        if (allow_dyn) and random_onoff():
-            dyn_change = np.random.uniform(low=0.5,high=1.5)  # change amplitude
-            y_mod = np.array(y_mod * dyn_change, dtype=np.int16)
+    # # change pitch (w/o speed)
+    # if (allow_pitch) and random_onoff():
+    #     bins_per_octave = 24        # pitch increments are quarter-steps
+    #     pitch_pm = 4                                # +/- this many quarter steps
+    #     pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
+    #     y_mod = librosa.effects.pitch_shift(np.array(y_mod, dtype=np.float), sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
+    #     y_mod = np.array(y_mod, dtype=np.int16)
+
+    # # change speed (w/o pitch),
+    # if (allow_speed) and random_onoff():
+    #     speed_change = np.random.uniform(low=0.8,high=1.2)
+    #     tmp = librosa.effects.time_stretch(np.array(y_mod, dtype=np.float), speed_change)
+    #     tmp = np.array(tmp, dtype=np.int16)
+    #     minlen = min( y.shape[0], tmp.shape[0])        # keep same length as original;
+    #     y_mod *= 0                                    # pad with zeros
+    #     y_mod[0:minlen] = tmp[0:minlen]
+    #
+    #     #change dynamic range
+    # if (allow_dyn) and random_onoff():
+    #     dyn_change = np.random.uniform(low=0.5,high=1.5)  # change amplitude
+    #     y_mod = np.array(y_mod * dyn_change, dtype=np.int16)
 
     return y_mod

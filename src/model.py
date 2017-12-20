@@ -21,15 +21,15 @@ def get_model(classes=12):
     x = BatchNormalization()(x)
     x = Dropout(0.5)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.5)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.5)(x)
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(classes, activation='softmax')(x)

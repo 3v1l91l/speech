@@ -23,6 +23,7 @@ import seaborn as sn
 
 L = 16000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
+legal_labels_without_silence = 'yes no up down left right on off stop go unknown'.split()
 recognized_labels = 'yes no up down left right on off stop go'.split()
 root_path = r'..'
 out_path = r'.'
@@ -132,8 +133,8 @@ def get_data():
 def get_data_known_unknown():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
-    train.drop(train[~train.word.isin(recognized_labels)].index, inplace=True)
-    valid.drop(valid[~valid.word.isin(recognized_labels)].index, inplace=True)
+    train.drop(train[~train.word.isin(legal_labels_without_silence)].index, inplace=True)
+    valid.drop(valid[~valid.word.isin(legal_labels_without_silence)].index, inplace=True)
     train.reset_index(inplace=True)
     valid.reset_index(inplace=True)
 

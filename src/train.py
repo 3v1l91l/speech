@@ -270,7 +270,8 @@ def train_model_old():
 
     # model = load_model('model.model')
     model = get_model(classes=12)
-    model.load_weights('model_old.model')
+    model.summary()
+    # model.load_weights('model_old.model')
     train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     model.fit_generator(

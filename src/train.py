@@ -37,7 +37,7 @@ silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 BATCH_SIZE = 128
 
 def validate_old():
-    _, _, _, _, label_index, _ = get_data_old()
+    _, _, _, _, label_index, _, _ = get_data_old()
     model = load_model('model_old.model')
     valid = prepare_data(get_path_label_df(test_internal_data_path))
     _, results = get_predicts_old(valid.path.values, model, label_index)
@@ -301,6 +301,18 @@ def make_predictions():
     df['label'] = results
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
+def make_predictions_old():
+    _, _, _, _, label_index, _, _ = get_data_old()
+    model = load_model('model_old.model')
+    fpaths = glob(os.path.join(test_data_path, '*wav'))
+    fpaths = np.random.choice(fpaths, 5000)
+    index, results = get_predicts_old(fpaths, model, label_index)
+
+    df = pd.DataFrame(columns=['fname', 'label'])
+    df['fname'] = index
+    df['label'] = results
+    df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+
 def validate_predictions():
     _, _, _, _, label_index, _ = get_data()
     _, _, _, _, silence_label_index, _ = get_data_silence_not_silence()
@@ -318,6 +330,8 @@ def main():
     # validate_predictions()
     # validate_old()
     # make_predictions()
+    # make_predictions_old()
+
 
 if __name__ == "__main__":
     main()

@@ -305,7 +305,7 @@ def make_predictions_old():
     _, _, _, _, label_index, _, _ = get_data_old()
     model = load_model('model_old.model')
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    fpaths = np.random.choice(fpaths, 5000)
+    # fpaths = np.random.choice(fpaths, 5000)
     index, results = get_predicts_old(fpaths, model, label_index)
 
     df = pd.DataFrame(columns=['fname', 'label'])
@@ -326,11 +326,11 @@ def main():
     # train_unknown_model()
     # train_silence_model()
     # train_model()
-    train_model_old()
+    # train_model_old()
     # validate_predictions()
     # validate_old()
     # make_predictions()
-    # make_predictions_old()
+    make_predictions_old()
 
 
 if __name__ == "__main__":

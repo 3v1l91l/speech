@@ -152,7 +152,9 @@ def load_wav_by_path(p):
     # if std != 0:
     #     wav = wav - mean
     #     wav = wav / std
-    wav = np.array(wav / np.max(wav))
+    wav_max = np.max(wav)
+    if wav_max != 9:
+        wav = np.array(wav / np.max(wav))
     return wav
 
 def random_onoff():                # randomly turns on or off

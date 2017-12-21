@@ -36,7 +36,6 @@ background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 BATCH_SIZE = 128
 
-
 def validate_old():
     _, _, _, _, label_index, _ = get_data_old()
     model = load_model('model_old.model')
@@ -274,7 +273,7 @@ def train_model_old():
     # model = load_model('model.model')
     model = get_model(classes=12)
     model.summary()
-    model.load_weights('model_old.model')
+    # model.load_weights('model_old.model')
     train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
     model.fit_generator(

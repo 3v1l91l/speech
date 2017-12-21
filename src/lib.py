@@ -153,7 +153,7 @@ def load_wav_by_path(p):
     #     wav = wav - mean
     #     wav = wav / std
     wav_max = np.max(wav)
-    if wav_max != 9:
+    if wav_max != 0:
         wav = np.array(wav / np.max(wav))
     return wav
 

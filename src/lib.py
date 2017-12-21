@@ -33,10 +33,10 @@ def get_path_label_df(path, pattern='**' + os.sep + '*.wav'):
 
 def prepare_data(df):
     words = df.word.unique().tolist()
-    unknown = [w for w in words if w not in legal_labels]
+    # unknown = [w for w in words if w not in legal_labels]
     df = df.drop(df[df.word.isin(['_background_noise_'])].index)
     df.reset_index(inplace=True)
-    df.loc[df.word.isin(unknown), 'word'] = 'unknown'
+    # df.loc[df.word.isin(unknown), 'word'] = 'unknown'
     return df
 
 def get_specgrams(wavs):
@@ -121,13 +121,15 @@ def log_specgram(audio, sr=16000):
     return logspec
 
 def label_transform(labels):
-    nlabels = []
-    for label in labels:
-        if label not in legal_labels:
-            nlabels.append('unknown')
-        else:
-            nlabels.append(label)
-    return pd.get_dummies(pd.Series(nlabels))
+    # nlabels = []
+    # for label in labels:
+    #     if label not in legal_labels:
+    #         nlabels.append('unknown')
+    #     else:
+    #         nlabels.append(label)
+    # return pd.get_dummies(pd.Series(nlabels))
+    return pd.get_dummies(pd.Series(labels))
+
 
 def load_wav_by_path(p):
     _, wav = wavfile.read(p)
@@ -182,6 +184,20 @@ def augment_unknown(y, surely_flip, sr, noises, unknowns):
 def augment_silence(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     allow_speed = True, allow_dyn = True, allow_noise = True, allow_timeshift = True, tab=""):
     y_mod = augment_data(y, sr, noises)
+    if random_onoff():
+        noise = noises[random.randint(0, len(noises) - 1)]
+        scale = np.random.uniform(low=0.3, high=0.6, size=1)
+        if np.max(noise) > 0:
+            # y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
+            y_mod = (1 - scale) * y_mod + (noise * scale)
+
+    if random_onoff():
+        noise = noises[random.randint(0, len(noises) - 1)]
+        scale = np.random.uniform(low=0.3, high=0.6, size=1)
+        if np.max(noise) > 0:
+            # y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
+            y_mod = (1 - scale) * y_mod + (noise * scale)
+
     return y_mod
 
 def augment_data_valid(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,

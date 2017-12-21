@@ -19,6 +19,7 @@ from generator import *
 # import lightgbm as lgb
 from sklearn.metrics import confusion_matrix
 from model import *
+import seaborn as sn
 
 BATCH_SIZE = 128
 L = 16000
@@ -41,10 +42,11 @@ def get_predicts(fpaths, model, label_index):
     batch = 128
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
         predicted_probabilities = model.predict(imgs)
+        print(np.sum(predicted_probabilities))
         predicts = []
         for predicted_probability in predicted_probabilities:
-            if max(predicted_probability) > 0.5:
-                predicts.extend(label_index[np.argmax(predicted_probability)])
+            if max(predicted_probability) > 0.92:
+                predicts.extend([label_index[np.argmax(predicted_probability)]])
             else:
                 predicts.extend(['unknown'])
         index.extend(fnames)
@@ -55,8 +57,8 @@ def get_data():
     train = prepare_data(get_path_label_df(train_data_path))
     valid = prepare_data(get_path_label_df(valid_data_path))
     silence_paths = train.path[train.word == 'silence']
-    train.drop(train[~train.word.isin(legal_labels_without_unknown)].index, inplace=True)
-    valid.drop(valid[~valid.word.isin(legal_labels_without_unknown)].index, inplace=True)
+    # train.drop(train[~train.word.isin(legal_labels_without_unknown)].index, inplace=True)
+    # valid.drop(valid[~valid.word.isin(legal_labels_without_unknown)].index, inplace=True)
     train.reset_index(inplace=True)
     valid.reset_index(inplace=True)
 
@@ -87,7 +89,7 @@ def train_model():
     silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
 
     # model = load_model('model.model')
-    model = get_model_simple(classes=11)
+    model = get_model_simple(classes=31)
     # model.load_weights('model.model')
     train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
@@ -127,8 +129,8 @@ def make_predictions():
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 def main():
-    # train_model()
-    validate_predictions()
+    train_model()
+    # validate_predictions()
     # make_predictions()
 
 if __name__ == "__main__":

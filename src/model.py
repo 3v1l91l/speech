@@ -41,7 +41,7 @@ def get_model_simple(classes=12):
     loss = losses.categorical_crossentropy
     if classes == 2:
         loss = losses.binary_crossentropy
-    model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
     return model
 
 def get_model(classes=12):

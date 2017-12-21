@@ -135,10 +135,13 @@ def get_data():
 def get_data_known_unknown():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
+    unknown_paths = train.path[train.word == 'unknown']
     train.drop(train[~train.word.isin(legal_labels_without_silence)].index, inplace=True)
     valid.drop(valid[~valid.word.isin(legal_labels_without_silence)].index, inplace=True)
     train.reset_index(inplace=True)
     valid.reset_index(inplace=True)
+    original_labels_train = np.array(train.word.values)
+    original_labels_valid = np.array(valid.word.values)
 
     train.loc[train.word != 'unknown', 'word'] = ['known']
     valid.loc[valid.word != 'unknown', 'word'] = ['known']
@@ -151,7 +154,7 @@ def get_data_known_unknown():
     y_train = np.array(y_train.values)
     y_valid = np.array(y_valid.values)
 
-    return train, valid, y_train, y_valid, label_index, silence_paths
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid
 
 def get_data_old():
     train, valid = get_train_valid_df()
@@ -216,15 +219,17 @@ def train_silence_model():
     )
 
 def train_unknown_model():
-    train, valid, y_train, y_valid, label_index, silence_paths = get_data_known_unknown()
-    pool = Pool()
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels, original_labels_valid = get_data_known_unknown()
+    # pool = Pool()
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
+    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
+    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
+    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
-    unknown_model = get_model(classes=2)
+    unknown_model = get_model_simple(classes=2)
     # unknown_model.load_weights('model_unknown.model')
-    train_gen = batch_generator_unknown_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_unknown_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
+    train_gen = batch_generator_unknown_paths(False, train.path.values, y_train, train.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_unknown_paths(True, valid.path.values, y_valid, valid.word, silences, unknowns, original_labels_valid, batch_size=BATCH_SIZE)
     unknown_model.fit_generator(
         generator=train_gen,
         epochs=30,
@@ -326,11 +331,11 @@ def main():
     # train_unknown_model()
     # train_silence_model()
     # train_model()
-    # train_model_old()
+    train_model_old()
     # validate_predictions()
     # validate_old()
     # make_predictions()
-    make_predictions_old()
+    # make_predictions_old()
 
 
 if __name__ == "__main__":

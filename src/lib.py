@@ -64,7 +64,7 @@ def get_specgrams_augment_known_valid(wavs, silences):
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_unknown(wavs, silences):
+def get_specgrams_augment_unknown(wavs, silences, unknowns):
     if len(wavs) == 0:
         print('err')
     len_paths = len(wavs)
@@ -76,7 +76,7 @@ def get_specgrams_augment_unknown(wavs, silences):
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
-def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences):
+def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences, unknowns):
     if len(wavs) == 0:
         print('err')
     len_paths = len(wavs)
@@ -84,7 +84,7 @@ def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences):
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        wav = augment_unknown(wavs[i], i in unknown_flip_known_ix, fs, silences)
+        wav = augment_unknown(wavs[i], i in unknown_flip_known_ix, fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
@@ -152,12 +152,13 @@ def load_wav_by_path(p):
     # if std != 0:
     #     wav = wav - mean
     #     wav = wav / std
+    wav = np.array(wav / np.max(wav))
     return wav
 
 def random_onoff():                # randomly turns on or off
     return bool(random.getrandbits(1))
 
-def augment_unknown(y, surely_flip, sr, noises):
+def augment_unknown(y, surely_flip, sr, noises, unknowns):
     y_mod = y
     if surely_flip:
         y_mod = np.flip(y_mod, axis=0)
@@ -167,8 +168,11 @@ def augment_unknown(y, surely_flip, sr, noises):
 
         # just mess it up all the way!
         if random_onoff():
-            y_mod = 0.5 * y_mod + 0.5 * np.roll(np.flip(y_mod, axis=0), int(sr * np.random.uniform(0.1, 0.5, 1)))
-            y_mod = np.array(y_mod, dtype=np.int16)
+            unknown = unknowns[random.randint(0, len(unknowns) - 1)]
+            if random_onoff():
+                unknown = np.flip(unknown, axis=0)
+            y_mod = 0.5 * y_mod + 0.5 * np.roll(unknown, int(sr * np.random.uniform(0.1, 0.5, 1)))
+            # y_mod = np.array(y_mod, dtype=np.int16)
 
     augment_data(y_mod, sr, noises)
     return y_mod
@@ -210,7 +214,8 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         noise = noises[random.randint(0, len(noises) - 1)]
         scale = np.random.uniform(low=0, high=0.2, size=1)
         if np.max(noise) > 0 :
-            y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
+            # y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
+            y_mod = (1 - scale) * y_mod + (noise * scale)
 
     if (allow_speedandpitch) and random_onoff():
         length_change = np.random.uniform(low=0.8, high=1.3)

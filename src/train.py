@@ -157,6 +157,7 @@ def get_data_known_unknown():
 def get_data_old():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
+    unknown_paths = train.path[train.word == 'silence']
 
     len_train = len(train.word.values)
     temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
@@ -166,7 +167,7 @@ def get_data_old():
     y_train = np.array(y_train.values)
     y_valid = np.array(y_valid.values)
 
-    return train, valid, y_train, y_valid, label_index, silence_paths
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
 
 def get_data_silence_not_silence():
     train, valid = get_train_valid_df()
@@ -262,18 +263,20 @@ def train_model():
     )
 
 def train_model_old():
-    train, valid, y_train, y_valid, label_index, silence_paths = get_data_old()
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data_old()
 
     pool = Pool()
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
+    rand_unknown_paths = silence_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
+    unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
 
     # model = load_model('model.model')
     model = get_model(classes=12)
     model.summary()
-    # model.load_weights('model_old.model')
-    train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
+    model.load_weights('model_old.model')
+    train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,

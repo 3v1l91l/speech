@@ -54,7 +54,7 @@ def batch_generator_paths(X_paths, y, y_label, silences, batch_size=128):
         yield np.stack(specgrams), res_labels
 
 @threadsafe_generator
-def batch_generator_paths_old(validate, X_paths, y, y_label, silences, batch_size=16):
+def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns, batch_size=16):
     while True:
         # Try to represent classes distribution
         batch_size_unknown = math.ceil(0.15 * batch_size)
@@ -73,7 +73,7 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, batch_siz
         specgrams = []
         res_labels = []
 
-        specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences))
+        specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
         res_labels.extend(y[all_unknown_ix])
 
         specgrams.extend(get_specgrams_augment_silence(X[len(all_unknown_ix):len(all_unknown_ix) + len(silence_ix)], silences))

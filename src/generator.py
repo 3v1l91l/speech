@@ -109,7 +109,7 @@ def batch_generator_silence_paths(validate, X_paths, y, y_label, silences, unkno
         if validate:
             batch_size_unknown_flip_known_prop = 0.3
             unknown_prop = 0.2
-        batch_size_unknown = math.ceil(0.5 * batch_size)
+        batch_size_unknown = math.ceil(unknown_prop * batch_size)
         batch_size_unknown_flip_known = math.ceil(batch_size_unknown_flip_known_prop * batch_size)
         batch_size_silence = batch_size - batch_size_unknown - batch_size_unknown_flip_known
 

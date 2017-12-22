@@ -101,7 +101,7 @@ def get_data_silence_not_silence():
     silence_paths = train.path[train.word == 'silence']
     unknown_paths = train.path[train.word != 'silence']
     original_labels = np.array(train.word.values)
-    original_labels_valid = np.array(train.word.values)
+    original_labels_valid = np.array(valid.word.values)
 
     len_train = len(train.word.values)
     train.loc[train.word != 'silence', 'word'] = ['unknown']

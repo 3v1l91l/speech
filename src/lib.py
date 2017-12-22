@@ -102,15 +102,15 @@ def get_specgrams_augment_silence(wavs, silences):
 
 def log_specgram(audio, sr=16000):
     n_mfcc = 40
-    window_size_ms = 30.0
+    window_size_ms = 20.0
     window_stride_ms = 10.0
     window_size_samples = int(sr * window_size_ms / 1000)
     window_stride_samples = int(sr * window_stride_ms / 1000)
     #
     # logspec = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
 
-    logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.030, frame_stride=0.01,
-             num_filters=40, fft_length=512, low_frequency=0)#, high_frequency=5500)
+    logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.020, frame_stride=0.010,
+             num_filters=40, fft_length=256, low_frequency=0, high_frequency=5500)
     # logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
 
     # mean = np.mean(np.ravel(logspec))

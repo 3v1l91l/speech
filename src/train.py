@@ -51,7 +51,8 @@ def get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
         for i in range(len(fnames)):
             if(np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix):
                 predicts.extend(['silence'])
-            elif(np.argmax(predicted_probabilities[i]) > 0.5):
+            elif(np.argmax(predicted_probabilities[i]) > 0.95):
+                print(np.max(predicted_probabilities[i]))
                 predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
             else:
                 predicts.extend(['unknown'])
@@ -119,7 +120,7 @@ def get_callbacks(model_name='model'):
     model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.8, patience=1, verbose=1)
     tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
     lr_tracker = LearningRateTracker()
     return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]
@@ -177,7 +178,8 @@ def make_predictions():
     model = load_model('model.model')
     silence_model = load_model('model_silence.model')
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    # fpaths = np.random.choice(fpaths, 5000)
+    fpaths = np.random.choice(fpaths, 5000)
+    # fpaths = glob(os.path.join(test_data_path, 'clip_2e4ba4c25.wav'))
     index, results = get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
 
     df = pd.DataFrame(columns=['fname', 'label'])
@@ -194,9 +196,9 @@ def validate_predictions():
 
 def main():
     # train_silence_model()
-    # train_model()
+    train_model()
     # validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 if __name__ == "__main__":
     main()

@@ -45,7 +45,7 @@ def get_model_simple(classes=12):
     return model
 
 def get_model(classes=12):
-    input_shape = (98, 40, 1)
+    input_shape = (99, 40, 1)
     input = Input(shape=input_shape)
     # x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
     # x = Activation('relu')(x)

@@ -64,7 +64,7 @@ def validate(path, model, silence_model, label_index, silence_label_index):
     valid = prepare_data(get_path_label_df(path))
     y_true = np.array(valid.word.values)
     y_true[~np.isin(y_true, legal_labels)] = 'unknown'
-    _, y_pred = get_predicts(valid.path.values, model, label_index)
+    _, y_pred = get_predicts(valid.path.values, model, silence_model, label_index, silence_label_index)
     labels = legal_labels
     # labels = next(os.walk(train_data_path))[1]
     confusion = confusion_matrix(y_true, y_pred, labels)
@@ -173,23 +173,12 @@ def train_model():
 
 def make_predictions():
     _, _, _, _, label_index, _ = get_data()
-    _, _, _, _, silence_label_index, _ = get_data_silence_not_silence()
+    _, _, _, _, silence_label_index, _, _, _, _ = get_data_silence_not_silence()
     model = load_model('model.model')
     silence_model = load_model('model_silence.model')
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    index, results = get_predicts(fpaths, model, silence_model, silence_label_index, label_index)
-
-    df = pd.DataFrame(columns=['fname', 'label'])
-    df['fname'] = index
-    df['label'] = results
-    df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
-
-def make_predictions_old():
-    _, _, _, _, label_index, _, _ = get_data_old()
-    model = load_model('model_old.model')
-    fpaths = glob(os.path.join(test_data_path, '*wav'))
-    fpaths = np.random.choice(fpaths, 5000)
-    index, results = get_predicts_old(fpaths, model, label_index)
+    # fpaths = np.random.choice(fpaths, 5000)
+    index, results = get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
 
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
@@ -198,15 +187,16 @@ def make_predictions_old():
 
 def validate_predictions():
     _, _, _, _, label_index, _ = get_data()
-    _, _, _, _, silence_label_index, _ = get_data_silence_not_silence()
+    _, _, _, _, silence_label_index, _, _, _, _ = get_data_silence_not_silence()
     model = load_model('model.model')
     silence_model = load_model('model_silence.model')
     validate(test_internal_data_path, model, silence_model, label_index, silence_label_index)
 
 def main():
-    train_silence_model()
+    # train_silence_model()
     # train_model()
     # validate_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

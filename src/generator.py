@@ -55,20 +55,21 @@ def batch_generator_paths(X_paths, y, y_label, silences, batch_size=128):
         batch_size_silence = math.ceil(silence_proportion * batch_size)
         batch_size_unknown = math.ceil(unknown_proportion * batch_size)
 
-        batch_size_other = batch_size - batch_size_silence - batch_size_unknown
-        known_ix = np.random.choice(y_label[np.isin()].index, size=batch_size_other)
+        batch_size_known = batch_size - batch_size_silence - batch_size_unknown
+        known_ix = np.random.choice(y_label[np.isin(y_label, legal_labels_without_unknown_and_silence)].index, size=batch_size_known)
+        unknown_ix = np.random.choice(y_label[~np.isin(y_label, legal_labels_without_unknown)].index, size=batch_size_unknown)
         silence_ix = np.random.choice(y_label[y_label == 'silence'].index, size=batch_size_silence)
-        X = list(map(load_wav_by_path, np.concatenate((X_paths[other_ix], X_paths[silence_ix]))))
+        X = list(map(load_wav_by_path, np.concatenate((X_paths[known_ix], X_paths[unknown_ix], X_paths[silence_ix]))))
 
         specgrams = []
         res_labels = []
-        specgrams.extend(get_specgrams_augment_known(X[:len(other_ix)], silences))
-        res_labels.extend(y[other_ix])
-
-        specgrams.extend(get_specgrams_augment_silence(X[len(other_ix):], silences))
+        specgrams.extend(get_specgrams_augment_known(X[:len(known_ix)], silences))
+        res_labels.extend(y[known_ix])
+        specgrams.extend(get_specgrams_augment_known(X[len(known_ix):len(known_ix)+len(unknown_ix)], silences))
+        res_labels.extend(y[known_ix])
+        specgrams.extend(get_specgrams_augment_silence(X[len(known_ix)+len(unknown_ix):], silences))
         res_labels.extend(y[silence_ix])
 
-        res_labels = np.concatenate((y[other_ix], y[silence_ix]))
         yield np.stack(specgrams), res_labels
 
 @threadsafe_generator

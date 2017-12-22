@@ -70,6 +70,8 @@ def batch_generator_paths(X_paths, y, y_label, silences, batch_size=128):
         specgrams.extend(get_specgrams_augment_silence(X[len(known_ix)+len(unknown_ix):], silences))
         res_labels.extend(y[silence_ix])
 
+        res_labels = np.concatenate((y[known_ix],y[unknown_ix],y[silence_ix]))
+
         yield np.stack(specgrams), res_labels
 
 @threadsafe_generator

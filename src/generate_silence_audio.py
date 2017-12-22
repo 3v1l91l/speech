@@ -3,6 +3,7 @@ from scipy.io import wavfile
 import numpy as np
 import os
 from numpy.fft import rfft, irfft
+import random
 
 train_dir = os.path.join('..', 'input', 'train')
 back_noise_dir = os.path.join('..', 'input', 'train')
@@ -23,12 +24,10 @@ def generate_and_save_silences(silence_audio_dir):
     gen_silence_files_num = 2000
     idx = np.random.randint(0, len(wavs)-1, gen_silence_files_num)
     fs = 16000
-    gen_wavs = []
     count = 0
     for i in idx:
-        sec_length = (wavs[i].shape[0] // fs) - 1
-        sec_start = np.random.randint(0, sec_length)
-        gen_wav = wavs[i][sec_start * fs : (sec_start+1) * fs]
+        start = random.randint(0,wavs[i].shape[0]-fs)
+        gen_wav = wavs[i][start : start + fs]
         wavfile.write(os.path.join(silence_audio_dir, 'noise_' + str(count) + '.wav'), fs, gen_wav)
         count += 1
 

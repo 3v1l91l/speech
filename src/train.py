@@ -36,53 +36,14 @@ background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 BATCH_SIZE = 128
 
-def validate_old():
-    _, _, _, _, label_index, _, _ = get_data_old()
-    model = load_model('model_old.model')
-    valid = prepare_data(get_path_label_df(test_internal_data_path))
-    _, results = get_predicts_old(valid.path.values, model, label_index)
-    confusion = confusion_matrix(valid.word.values, results, legal_labels)
-    confusion_df = pd.DataFrame(confusion, index=legal_labels, columns=legal_labels)
-    plt.figure(figsize=(10, 7))
-    sn.heatmap(confusion_df, annot=True, fmt="d")
-    plt.show()
-
-def get_predicts_old(fpaths, model, label_index):
+def get_predicts(fpaths, model, silence_model, label_index, silence_label_index):
     # fpaths = np.random.choice(fpaths, 1000)
-    index = []
-    results = []
-    batch = 128
-    for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
-        predicted_probabilities = model.predict(imgs)
-        predict_max_indexes = []
-        silence_label_index = int((label_index == 'silence').nonzero()[0])
-        for predicted_probability in predicted_probabilities:
-            predict_max_index = np.argmax(predicted_probability)
-            # if predict_max_index == unknown_label_index:    # try to come up with real label to replicate label distribution
-            #     predicted_probability_without_unknown = predicted_probability
-            #     predicted_probability_without_unknown[unknown_label_index] = 0
-            #     if(any(predicted_probability_without_unknown > 0.3)):
-            #         print(max(predicted_probability))
-            #         predict_max_index = np.argmax(predicted_probability_without_unknown)
-            if max(predicted_probability) < 0.2:
-                predict_max_index = silence_label_index
-            predict_max_indexes.append(predict_max_index)
-        predicts = [label_index[p] for p in predict_max_indexes]
-
-        index.extend(fnames)
-        results.extend(predicts)
-    return index, results
-
-
-
-def get_predicts(fpaths, model, silence_model, unknown_model, silence_label_index, label_index, unknown_label_index):
-    # fpaths = np.random.choice(fpaths, 1000)
+    label_index[~np.isin(label_index, legal_labels)] = 'unknown'
     index = []
     results = []
     batch = 128
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
         silence_predicted_probabilities = silence_model.predict(imgs)
-        unknown_predicted_probabilities = unknown_model.predict(imgs)
         predicted_probabilities = model.predict(imgs)
         predicts = []
         silence_label_index_ix = np.where(silence_label_index == 'silence')
@@ -90,24 +51,27 @@ def get_predicts(fpaths, model, silence_model, unknown_model, silence_label_inde
         for i in range(len(fnames)):
             if(np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix):
                 predicts.extend(['silence'])
-            elif(np.argmax(unknown_predicted_probabilities[i]) == unknown_label_index_ix):
-                predicts.extend(['unknown'])
-            else:
+            elif(np.argmax(predicted_probabilities[i]) > 0.5):
                 predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
-                
+            else:
+                predicts.extend(['unknown'])
+
         index.extend(fnames)
         results.extend(predicts)
     return index, results
 
-def validate(path, model, silence_model, unknown_model, silence_label_index, label_index, unknown_label_index):
+def validate(path, model, silence_model, label_index, silence_label_index):
     valid = prepare_data(get_path_label_df(path))
-    _, results = get_predicts(valid.path.values, model, silence_model, unknown_model, silence_label_index, label_index, unknown_label_index)
-    confusion = confusion_matrix(valid.word.values, results, legal_labels)
-    confusion_df= pd.DataFrame(confusion, index=legal_labels, columns=legal_labels)
+    y_true = np.array(valid.word.values)
+    y_true[~np.isin(y_true, legal_labels)] = 'unknown'
+    _, y_pred = get_predicts(valid.path.values, model, label_index)
+    labels = legal_labels
+    # labels = next(os.walk(train_data_path))[1]
+    confusion = confusion_matrix(y_true, y_pred, labels)
+    confusion_df = pd.DataFrame(confusion, index=labels, columns=labels)
     plt.figure(figsize=(10, 7))
     sn.heatmap(confusion_df, annot=True, fmt="d")
     plt.show()
-    # print(confusion)
 
 def get_train_valid_df():
     train = prepare_data(get_path_label_df(train_data_path))
@@ -117,8 +81,8 @@ def get_train_valid_df():
 def get_data():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
-    train.drop(train[~train.word.isin(recognized_labels)].index, inplace=True)
-    valid.drop(valid[~valid.word.isin(recognized_labels)].index, inplace=True)
+    train.drop(train[train.word.isin(['silence'])].index, inplace=True)
+    valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
     train.reset_index(inplace=True)
     valid.reset_index(inplace=True)
 
@@ -132,48 +96,11 @@ def get_data():
 
     return train, valid, y_train, y_valid, label_index, silence_paths
 
-def get_data_known_unknown():
-    train, valid = get_train_valid_df()
-    silence_paths = train.path[train.word == 'silence']
-    unknown_paths = train.path[train.word == 'unknown']
-    train.drop(train[~train.word.isin(legal_labels_without_silence)].index, inplace=True)
-    valid.drop(valid[~valid.word.isin(legal_labels_without_silence)].index, inplace=True)
-    train.reset_index(inplace=True)
-    valid.reset_index(inplace=True)
-    original_labels_train = np.array(train.word.values)
-    original_labels_valid = np.array(valid.word.values)
-
-    train.loc[train.word != 'unknown', 'word'] = ['known']
-    valid.loc[valid.word != 'unknown', 'word'] = ['known']
-
-    len_train = len(train.word.values)
-    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
-    y_train, y_valid = temp[:len_train], temp[len_train:]
-
-    label_index = y_train.columns.values
-    y_train = np.array(y_train.values)
-    y_valid = np.array(y_valid.values)
-
-    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid
-
-def get_data_old():
-    train, valid = get_train_valid_df()
-    silence_paths = train.path[train.word == 'silence']
-    unknown_paths = train.path[train.word == 'silence']
-
-    len_train = len(train.word.values)
-    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
-    y_train, y_valid = temp[:len_train], temp[len_train:]
-
-    label_index = y_train.columns.values
-    y_train = np.array(y_train.values)
-    y_valid = np.array(y_valid.values)
-
-    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
-
 def get_data_silence_not_silence():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
+    unknown_paths = train.path[train.word != 'silence']
+
 
     len_train = len(train.word.values)
     train.loc[train.word != 'silence', 'word'] = ['unknown']
@@ -185,7 +112,7 @@ def get_data_silence_not_silence():
     y_train = np.array(y_train.values)
     y_valid = np.array(y_valid.values)
 
-    return train, valid, y_train, y_valid, label_index, silence_paths
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
 
 def get_callbacks(model_name='model'):
     model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
@@ -198,17 +125,18 @@ def get_callbacks(model_name='model'):
 
 
 def train_silence_model():
-    train, valid, y_train, y_valid, label_index, silence_paths = get_data_silence_not_silence()
-    pool = Pool()
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data_silence_not_silence()
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
+    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
+    rand_unknown_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
+    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
-    silence_model = get_silence_model()
-    train_gen = batch_generator_silence_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_silence_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
+    silence_model = get_model(classes=2)
+    train_gen = batch_generator_silence_paths(train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_silence_paths(valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
     silence_model.fit_generator(
         generator=train_gen,
-        epochs=3,
+        epochs=10,
         steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
@@ -218,39 +146,14 @@ def train_silence_model():
         verbose=1
     )
 
-def train_unknown_model():
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels, original_labels_valid = get_data_known_unknown()
-    # pool = Pool()
-    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
-    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
-    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
-
-    unknown_model = get_model_simple(classes=2)
-    # unknown_model.load_weights('model_unknown.model')
-    train_gen = batch_generator_unknown_paths(False, train.path.values, y_train, train.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_unknown_paths(True, valid.path.values, y_valid, valid.word, silences, unknowns, original_labels_valid, batch_size=BATCH_SIZE)
-    unknown_model.fit_generator(
-        generator=train_gen,
-        epochs=30,
-        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
-        validation_data=valid_gen,
-        validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks('model_unknown'),
-        workers=4,
-        use_multiprocessing=False,
-        verbose=1
-    )
-
 def train_model():
     train, valid, y_train, y_valid, label_index, silence_paths = get_data()
 
-    pool = Pool()
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
+    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
 
     # model = load_model('model.model')
-    model = get_model(classes=10)
+    model = get_model(classes=30)
     # model.load_weights('model.model')
     train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
@@ -261,33 +164,6 @@ def train_model():
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
         callbacks=get_callbacks('model'),
-        workers=4,
-        use_multiprocessing=False,
-        verbose=1
-    )
-
-def train_model_old():
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data_old()
-
-    pool = Pool()
-    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
-    rand_unknown_paths = silence_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
-    unknowns = np.array(list(pool.imap(load_wav_by_path, rand_unknown_paths)))
-
-    # model = load_model('model.model')
-    model = get_model(classes=12)
-    model.summary()
-    # model.load_weights('model_old.model')
-    train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
-    model.fit_generator(
-        generator=train_gen,
-        epochs=100,
-        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
-        validation_data=valid_gen,
-        validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks('model_old'),
         workers=4,
         use_multiprocessing=False,
         verbose=1
@@ -310,7 +186,7 @@ def make_predictions_old():
     _, _, _, _, label_index, _, _ = get_data_old()
     model = load_model('model_old.model')
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    # fpaths = np.random.choice(fpaths, 5000)
+    fpaths = np.random.choice(fpaths, 5000)
     index, results = get_predicts_old(fpaths, model, label_index)
 
     df = pd.DataFrame(columns=['fname', 'label'])
@@ -321,22 +197,14 @@ def make_predictions_old():
 def validate_predictions():
     _, _, _, _, label_index, _ = get_data()
     _, _, _, _, silence_label_index, _ = get_data_silence_not_silence()
-    _, _, _, _, unknown_label_index, _ = get_data_known_unknown()
     model = load_model('model.model')
     silence_model = load_model('model_silence.model')
-    unknown_model = load_model('model_unknown.model')
-    validate(test_internal_data_path, model, silence_model, unknown_model, silence_label_index, label_index, unknown_label_index)
+    validate(test_internal_data_path, model, silence_model, label_index, silence_label_index)
 
 def main():
-    # train_unknown_model()
-    # train_silence_model()
+    train_silence_model()
     # train_model()
-    train_model_old()
     # validate_predictions()
-    # validate_old()
-    # make_predictions()
-    # make_predictions_old()
-
 
 if __name__ == "__main__":
     main()

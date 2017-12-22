@@ -125,7 +125,7 @@ def make_predictions():
     model = load_model('model2.model')
     fpaths = glob(os.path.join(test_data_path, '*wav'))
     # fpaths = [os.path.join(test_data_path, 'clip_03cafe2bd.wav')]
-    fpaths = np.random.choice(fpaths, 5000)
+    # fpaths = np.random.choice(fpaths, 5000)
     index, results = get_predicts(fpaths, model, label_index)
 
     df = pd.DataFrame(columns=['fname', 'label'])
@@ -134,9 +134,9 @@ def make_predictions():
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 def main():
-    train_model()
+    # train_model()
     # validate_predictions()
-    # make_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

@@ -132,11 +132,12 @@ def train_silence_model():
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     silence_model = get_model(classes=2)
+    silence_model.load_weights('model_silence.model')
     train_gen = batch_generator_silence_paths(train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_silence_paths(valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
     silence_model.fit_generator(
         generator=train_gen,
-        epochs=10,
+        epochs=20,
         steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,

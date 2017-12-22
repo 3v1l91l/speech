@@ -66,7 +66,7 @@ def batch_generator_paths(X_paths, y, y_label, silences, batch_size=128):
         specgrams.extend(get_specgrams_augment_known(X[:len(known_ix)], silences))
         res_labels.extend(y[known_ix])
         specgrams.extend(get_specgrams_augment_known(X[len(known_ix):len(known_ix)+len(unknown_ix)], silences))
-        res_labels.extend(y[known_ix])
+        res_labels.extend(y[unknown_ix])
         specgrams.extend(get_specgrams_augment_silence(X[len(known_ix)+len(unknown_ix):], silences))
         res_labels.extend(y[silence_ix])
 

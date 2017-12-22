@@ -8,7 +8,7 @@ from keras.callbacks import Callback
 
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 legal_labels_without_unknown = 'yes no up down left right on off stop go silence'.split()
-legal_labels_without_unknown_and_silence = 'yes no up down left right on off stop go silence'.split()
+legal_labels_without_unknown_and_silence = 'yes no up down left right on off stop go'.split()
 legal_labels_without_unknown_can_be_flipped = [x for x in legal_labels_without_unknown_and_silence if x[::-1] not in legal_labels_without_unknown_and_silence]
 
 from keras import backend as K
@@ -50,10 +50,13 @@ def batch_generator_paths(X_paths, y, y_label, silences, batch_size=128):
         #
         # specgrams = get_specgrams_augment_known(X, silences)
         # res_labels = y[known_ix]
+        unknown_proportion = 0.2
+        silence_proportion = 0.15
+        batch_size_silence = math.ceil(silence_proportion * batch_size)
+        batch_size_unknown = math.ceil(unknown_proportion * batch_size)
 
-        batch_size_silence = math.ceil(0.15 * batch_size)
-        batch_size_other = batch_size - batch_size_silence
-        other_ix = np.random.choice(y_label[y_label != 'silence'].index, size=batch_size_other)
+        batch_size_other = batch_size - batch_size_silence - batch_size_unknown
+        known_ix = np.random.choice(y_label[np.isin()].index, size=batch_size_other)
         silence_ix = np.random.choice(y_label[y_label == 'silence'].index, size=batch_size_silence)
         X = list(map(load_wav_by_path, np.concatenate((X_paths[other_ix], X_paths[silence_ix]))))
 

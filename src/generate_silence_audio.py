@@ -38,7 +38,12 @@ def generate_and_save_silences(silence_audio_dir):
         count += 1
 
     for i in range(200):
-        gen_wav = np.random.choice([-16000, 0, 16000], fs)
+        gen_wav = np.random.choice([-30000, 0, 30000], fs)
+        wavfile.write(os.path.join(silence_audio_dir, 'noise_' + str(count) + '.wav'), fs, gen_wav)
+        count += 1
+
+    for i in range(200):
+        gen_wav = np.random.randint(-10, 10, fs)*300
         wavfile.write(os.path.join(silence_audio_dir, 'noise_' + str(count) + '.wav'), fs, gen_wav)
         count += 1
 

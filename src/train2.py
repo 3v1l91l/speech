@@ -36,7 +36,7 @@ background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 
 def get_predicts(fpaths, model, label_index):
-
+    label_index[~np.isin(label_index, legal_labels)] = 'unknown'
     index = []
     results = []
     batch = 128
@@ -44,11 +44,12 @@ def get_predicts(fpaths, model, label_index):
         predicted_probabilities = model.predict(imgs)
         print(np.sum(predicted_probabilities))
         predicts = []
-        for predicted_probability in predicted_probabilities:
-            if max(predicted_probability) > 0.92:
-                predicts.extend([label_index[np.argmax(predicted_probability)]])
+        for i in range(len(predicted_probabilities)):
+            if max(predicted_probabilities[i]) > 0.5:
+                predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
             else:
                 predicts.extend(['unknown'])
+                print(fnames[i])
         index.extend(fnames)
         results.extend(predicts)
     return index, results
@@ -84,12 +85,11 @@ def get_callbacks(model_name='model'):
 def train_model():
     train, valid, y_train, y_valid, label_index, silence_paths = get_data()
 
-    pool = Pool()
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(pool.imap(load_wav_by_path, rand_silence_paths)))
+    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
 
     # model = load_model('model.model')
-    model = get_model_simple(classes=31)
+    model = get_model(classes=31)
     # model.load_weights('model.model')
     train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
@@ -109,18 +109,23 @@ def validate_predictions():
     _, _, _, _, label_index, _ = get_data()
     model = load_model('model2.model')
     valid = prepare_data(get_path_label_df(test_internal_data_path))
+    y_true = np.array(valid.word.values)
+    y_true[~np.isin(y_true, legal_labels)] = 'unknown'
     _, results = get_predicts(valid.path.values, model, label_index)
-    confusion = confusion_matrix(valid.word.values, results, legal_labels)
-    confusion_df = pd.DataFrame(confusion, index=legal_labels, columns=legal_labels)
+    labels = legal_labels
+    # labels = next(os.walk(train_data_path))[1]
+    confusion = confusion_matrix(y_true, results, labels)
+    confusion_df = pd.DataFrame(confusion, index=labels, columns=labels)
     plt.figure(figsize=(10, 7))
     sn.heatmap(confusion_df, annot=True, fmt="d")
     plt.show()
 
 def make_predictions():
-    train, valid, y_train, y_valid, label_index = get_data()
+    _, _, _, _, label_index, _ = get_data()
     model = load_model('model2.model')
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    # fpaths = np.random.choice(fpaths, 1000)
+    # fpaths = [os.path.join(test_data_path, 'clip_03cafe2bd.wav')]
+    fpaths = np.random.choice(fpaths, 5000)
     index, results = get_predicts(fpaths, model, label_index)
 
     df = pd.DataFrame(columns=['fname', 'label'])

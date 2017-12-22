@@ -33,10 +33,10 @@ def get_path_label_df(path, pattern='**' + os.sep + '*.wav'):
 
 def prepare_data(df):
     words = df.word.unique().tolist()
-    unknown = [w for w in words if w not in legal_labels]
+    # unknown = [w for w in words if w not in legal_labels]
     df = df.drop(df[df.word.isin(['_background_noise_'])].index)
     df.reset_index(inplace=True)
-    df.loc[df.word.isin(unknown), 'word'] = 'unknown'
+    # df.loc[df.word.isin(unknown), 'word'] = 'unknown'
     return df
 
 def get_specgrams(wavs):
@@ -72,21 +72,21 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
     fs = 16000
     duration = 1
     for i in range(len(wavs)):
-        wav = augment_unknown(wavs[i], fs, silences, unknowns)
+        wav = augment_unknown(wavs[i], False, fs, silences, unknowns)
         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
-# def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences, unknowns):
-#     if len(wavs) == 0:
-#         print('err')
-#     len_paths = len(wavs)
-#     log_specgrams = [None]*len_paths
-#     fs = 16000
-#     duration = 1
-#     for i in range(len(wavs)):
-#         wav = augment_unknown(wavs[i], i in unknown_flip_known_ix, fs, silences, unknowns)
-#         log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
-#     return log_specgrams
+def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences, unknowns):
+    if len(wavs) == 0:
+        print('err')
+    len_paths = len(wavs)
+    log_specgrams = [None]*len_paths
+    fs = 16000
+    duration = 1
+    for i in range(len(wavs)):
+        wav = augment_unknown(wavs[i], i in unknown_flip_known_ix, fs, silences, unknowns)
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+    return log_specgrams
 
 def get_specgrams_augment_silence(wavs, silences):
     if len(wavs) == 0:
@@ -162,10 +162,12 @@ def load_wav_by_path(p):
 def random_onoff():                # randomly turns on or off
     return bool(random.getrandbits(1))
 
-def augment_unknown(y, sr, noises, unknowns):
+def augment_unknown(y, surely_flip, sr, noises, unknowns):
     y_mod = y
 
-    if random_onoff():
+    if surely_flip:
+        y_mod = np.flip(y_mod, axis=0)
+    elif random_onoff():
         y_mod = np.flip(y_mod, axis=0)
 
     # just mess it up all the way!

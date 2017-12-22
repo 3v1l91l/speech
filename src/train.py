@@ -100,7 +100,7 @@ def get_data_silence_not_silence():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
     unknown_paths = train.path[train.word != 'silence']
-
+    original_labels = np.array(train.word.values)
 
     len_train = len(train.word.values)
     train.loc[train.word != 'silence', 'word'] = ['unknown']
@@ -112,12 +112,12 @@ def get_data_silence_not_silence():
     y_train = np.array(y_train.values)
     y_valid = np.array(y_valid.values)
 
-    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels
 
 def get_callbacks(model_name='model'):
     model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True, save_weights_only=False,
                                        verbose=1)
-    early_stopping = EarlyStopping(monitor='val_acc', patience=10, verbose=1)
+    early_stopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=1, verbose=1)
     tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
     lr_tracker = LearningRateTracker()
@@ -125,16 +125,16 @@ def get_callbacks(model_name='model'):
 
 
 def train_silence_model():
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data_silence_not_silence()
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels = get_data_silence_not_silence()
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
     rand_unknown_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     silence_model = get_model(classes=2)
-    silence_model.load_weights('model_silence.model')
-    train_gen = batch_generator_silence_paths(train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_silence_paths(valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
+    # silence_model.load_weights('model_silence.model')
+    train_gen = batch_generator_silence_paths(False, train.path.values, y_train, train.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_silence_paths(True, valid.path.values, y_valid, valid.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
     silence_model.fit_generator(
         generator=train_gen,
         epochs=20,

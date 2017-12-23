@@ -121,59 +121,36 @@ def get_model(classes=12):
 
     # x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block2_pool')(x)
     x = GlobalAveragePooling2D()(x)
-    x = Dense(classes, activation='softmax')(x)
+
+    opt = optimizers.Adam(lr=0.005)
+    # opt = optimizers.Adadelta()
+    if classes == 2:
+        loss = losses.binary_crossentropy
+        x = Dense(classes, activation='sigmoid')(x)
+    else:
+        loss = losses.categorical_crossentropy
+        x = Dense(classes, activation='softmax')(x)
+
+    model = Model(input, x)
+    model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
+    return model
+
+def get_gru_model(classes=2):
+    input_shape = (98, 13)
+    input = Input(shape=input_shape)
+    x = GRU(256, return_sequences=True)(input)
+    x = GRU(256, return_sequences=False)(x)
+    x = Dropout(0.25)(x)
+
+    if classes == 2:
+        loss = losses.binary_crossentropy
+        x = Dense(classes, activation='sigmoid')(x)
+    else:
+        loss = losses.categorical_crossentropy
+        x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
-    # opt = optimizers.Adadelta()
-    loss = losses.categorical_crossentropy
-    if classes == 2:
-        loss = losses.binary_crossentropy
-    model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
-    return model
-
-
-def get_silence_model(classes=2):
-    input_shape = (98, 40, 1)
-    input = Input(shape=input_shape)
-    x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = GlobalAveragePooling2D()(x)
-    x = Dense(classes, activation='sigmoid')(x)
-
-    model = Model(input, x)
-    opt = optimizers.Adam(lr=0.01)
-    model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['accuracy'])
-    return model
-
-
-def get_gru_model(classes=2):
-    input_shape = (98, 40)
-    input = Input(shape=input_shape)
-    x = GRU(256, return_sequences=True)(input)
-    x = GRU(256, return_sequences=False)(input)
-    x = Dropout(0.25)(x)
-    x = Dense(classes, activation='sigmoid')(x)
-
-    model = Model(input, x)
-    # opt = optimizers.Adam(lr=0.1)
-    opt = optimizers.Adadelta()
-    loss = losses.categorical_crossentropy
-    if classes == 2:
-        loss = losses.binary_crossentropy
     model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
     return model
 

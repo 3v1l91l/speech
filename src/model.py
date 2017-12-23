@@ -163,12 +163,13 @@ def get_silence_model(classes=2):
 def get_gru_model(classes=2):
     input_shape = (98, 40)
     input = Input(shape=input_shape)
-    x = GRU(256)(input)
+    x = GRU(256, return_sequences=True)(input)
+    x = GRU(256, return_sequences=False)(input)
     x = Dropout(0.25)(x)
     x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
-    # opt = optimizers.Adam(lr=0.005)
+    # opt = optimizers.Adam(lr=0.1)
     opt = optimizers.Adadelta()
     loss = losses.categorical_crossentropy
     if classes == 2:

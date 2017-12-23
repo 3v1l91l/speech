@@ -158,7 +158,7 @@ def train_model():
     # model = load_model('model.model')
     # model = get_model(classes=30)
     model = get_gru_model(classes=30)
-
+    model.summary()
     # model.load_weights('model.model')
     train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)

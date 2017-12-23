@@ -52,7 +52,7 @@ def get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
             if(np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix):
                 predicts.extend(['silence'])
             elif(np.argmax(predicted_probabilities[i]) > 0.95):
-                print(np.max(predicted_probabilities[i]))
+                # print(np.max(predicted_probabilities[i]))
                 predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
             else:
                 predicts.extend(['unknown'])
@@ -156,7 +156,9 @@ def train_model():
     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
 
     # model = load_model('model.model')
-    model = get_model(classes=30)
+    # model = get_model(classes=30)
+    model = get_gru_model(classes=30)
+
     # model.load_weights('model.model')
     train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
@@ -196,9 +198,9 @@ def validate_predictions():
 
 def main():
     # train_silence_model()
-    # train_model()
+    train_model()
     # validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 if __name__ == "__main__":
     main()

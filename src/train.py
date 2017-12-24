@@ -120,7 +120,7 @@ def get_callbacks(model_name='model'):
     model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_categorical_accuracy', save_best_only=True, save_weights_only=False,
                                        verbose=1)
     early_stopping = EarlyStopping(monitor='val_categorical_accuracy', patience=5, verbose=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.8, patience=1, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=1, verbose=1)
     tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
     lr_tracker = LearningRateTracker()
     return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]

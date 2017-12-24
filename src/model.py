@@ -195,14 +195,22 @@ def get_gru_model(classes=2):
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(3, 3), strides=(1, 2), name='pool1')(x)
-    x = Dropout(0.1, name='dropout1')(x)
     x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(3, 3), strides=(1, 2), name='pool2')(x)
-    x = Dropout(0.1, name='dropout2')(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
     # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)

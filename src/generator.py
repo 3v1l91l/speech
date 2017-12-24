@@ -59,12 +59,12 @@ def batch_generator_paths(X_paths, y, y_label, silences, batch_size=128):
         X = list(map(load_wav_by_path, np.concatenate((X_paths[known_ix], X_paths[unknown_ix]))))
 
         specgrams = []
-        res_labels = []
         specgrams.extend(get_specgrams_augment_known(X[:len(known_ix)], silences))
+        # specgrams.extend(get_specgrams(X[:len(known_ix)]))
         specgrams.extend(get_specgrams_augment_known(X[len(known_ix):], silences))
+        # specgrams.extend(get_specgrams(X[len(known_ix):]))
 
         res_labels = np.concatenate((y[known_ix],y[unknown_ix]))
-
         yield np.stack(specgrams), res_labels
 
 @threadsafe_generator
@@ -88,13 +88,11 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         res_labels = []
 
         specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
-        res_labels.extend(y[all_unknown_ix])
+        # specgrams.extend(get_specgrams(X[:len(all_unknown_ix)]))
 
         specgrams.extend(get_specgrams_augment_silence(X[len(all_unknown_ix):len(all_unknown_ix) + len(silence_ix)], silences))
-        res_labels.extend(y[silence_ix])
 
         specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix)+len(silence_ix):], silences))
-        res_labels.extend(y[known_ix])
 
         res_labels = np.concatenate((y[all_unknown_ix],y[silence_ix],y[known_ix]))
         yield np.stack(specgrams), res_labels

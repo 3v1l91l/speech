@@ -5,7 +5,7 @@ import keras.layers as layers
 from keras.layers.advanced_activations import ELU
 
 def get_model_simple(classes=12):
-    input_shape = (98, 26, 1)
+    input_shape = (99, 40, 1)
     input = Input(shape=input_shape)
     x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
     x = Activation('relu')(x)
@@ -32,9 +32,29 @@ def get_model_simple(classes=12):
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
     x = GlobalAveragePooling2D()(x)
 
-    opt = optimizers.Adam(lr=0.005)
+    opt = optimizers.Adam(lr=0.0025)
     # opt = optimizers.Adadelta()
     if classes == 2:
         loss = losses.binary_crossentropy
@@ -44,7 +64,7 @@ def get_model_simple(classes=12):
         x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
-    model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
+    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
     return model
 
 def get_model(classes=12):
@@ -135,11 +155,11 @@ def get_model(classes=12):
         x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
-    model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
+    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
     return model
 
 def get_gru_model(classes=2):
-    input_shape = (98, 40, 1)
+    input_shape = (99, 40, 1)
     input = Input(shape=input_shape)
     # x = ZeroPadding2D(padding=(0, 37))(input)
     # x = BatchNormalization(axis=2, name='bn_0_freq')(x)
@@ -186,24 +206,18 @@ def get_gru_model(classes=2):
     # x = Dropout(0.25)(x)
     #
 
-    x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
+    input = Input(shape=input_shape)
+    x = Conv2D(256, (1, 4), strides=(1, 2), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = MaxPooling2D(pool_size=(3, 3), strides=(1, 2), name='pool1')(x)
     x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = MaxPooling2D(pool_size=(3, 3), strides=(1, 2), name='pool2')(x)
     x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Conv2D(256, (1, 4), strides=(1, 2), use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
@@ -216,14 +230,56 @@ def get_gru_model(classes=2):
     # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     # x = Activation('relu')(x)
     # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+
+
+    # x = GlobalAveragePooling2D()(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
     # x = MaxPooling2D(pool_size=(2, 2), strides=(1, 2), name='pool3')(x)
     # x = Dropout(0.1, name='dropout3')(x)
     # x = Dropout(0.25)(x)
 
-    x = Reshape((19, 256))(x)
-    x = GRU(256, input_shape=input_shape, return_sequences=True, activation='relu')(x)
-    x = GRU(256, input_shape=input_shape, return_sequences=False, activation='relu')(x)
-    x = Dropout(0.25)(x)
+
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(input)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(input)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(input)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(input)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+    # #
+
+
+    # x = Reshape((96, 512))(x)
+    # x = GRU(32, input_shape=input_shape, return_sequences=True, activation='relu')(x)
+    # # x = Dropout(0.25)(x)
+    # x = GRU(64, input_shape=input_shape, return_sequences=True, activation='relu')(x)
+    # # x = Dropout(0.25)(x)
+    # x = GRU(128, input_shape=input_shape, return_sequences=True, activation='relu')(x)
+    # # x = Dropout(0.25)(x)
+    # x = GRU(256, input_shape=input_shape, return_sequences=False, activation='relu')(x)
+    # x = Dropout(0.25)(x)
+    x = GlobalAveragePooling2D()(x)
 
     if classes == 2:
         loss = losses.binary_crossentropy

@@ -158,7 +158,7 @@ def train_model():
     # model = load_model('model.model')
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
-    model = get_gru_model(classes=30)
+    model = get_model_simple(classes=30)
     model.summary()
     # model.load_weights('model.model')
     train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
@@ -181,7 +181,7 @@ def make_predictions():
     model = load_model('model.model')
     silence_model = load_model('model_silence.model')
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    # fpaths = np.random.choice(fpaths, 5000)
+    fpaths = np.random.choice(fpaths, 5000)
     # fpaths = glob(os.path.join(test_data_path, 'clip_2e4ba4c25.wav'))
     index, results = get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
 

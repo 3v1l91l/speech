@@ -97,7 +97,7 @@ def get_specgrams_augment_silence(wavs, silences):
     duration = 1
     for i in range(len(wavs)):
         wav = augment_silence(wavs[i], fs, silences)
-        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
     return log_specgrams
 
 def log_specgram(audio, sr=16000):

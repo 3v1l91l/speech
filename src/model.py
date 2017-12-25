@@ -97,7 +97,7 @@ def get_model(classes=12):
     x = MaxPooling2D((3, 3), strides=(1, 2), padding='same', name='block2_pool')(x)
     x = layers.add([x, residual])
 
-    residual = Conv2D(256, (1, 1), strides=(2, 2),
+    residual = Conv2D(256, (1, 1), strides=(1, 2),
                       padding='same', use_bias=False)(x)
     residual = BatchNormalization()(residual)
 
@@ -108,7 +108,7 @@ def get_model(classes=12):
     x = SeparableConv2D(256, (3, 3), padding='same', use_bias=False, name='block3_sepconv2')(x)
     x = BatchNormalization(name='block3_sepconv2_bn')(x)
 
-    x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block3_pool')(x)
+    x = MaxPooling2D((3, 3), strides=(1, 2), padding='same', name='block3_pool')(x)
     x = layers.add([x, residual])
 
     # residual = Conv2D(728, (1, 1), strides=(2, 2),
@@ -125,12 +125,12 @@ def get_model(classes=12):
     # x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block2_pool')(x)
     # x = GlobalAveragePooling2D()(x)
     #
-    x = Reshape((48, 728))(x)
+    x = Reshape((95, 728))(x)
     x = GRU(256, return_sequences=True, activation='relu')(x)
     x = GRU(256, return_sequences=True, activation='relu')(x)
     x = GRU(256, return_sequences=False, activation='relu')(x)
 
-    opt = optimizers.Adam(lr=0.005)
+    opt = optimizers.Adam(lr=0.015)
     # opt = optimizers.Adadelta()
     if classes == 2:
         loss = losses.binary_crossentropy

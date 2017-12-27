@@ -1,67 +1,49 @@
 from keras import optimizers, losses, activations, models, applications
-from keras.layers import SeparableConv2D, GRU, Reshape, GlobalAveragePooling2D, Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization, ZeroPadding2D, Activation, Conv2D
+from keras.layers import TimeDistributed, Bidirectional, SeparableConv2D, GRU, Reshape, GlobalAveragePooling2D, Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization, ZeroPadding2D, Activation, Conv2D
 from keras.models import Sequential, Model
 import keras.layers as layers
 from keras.layers.advanced_activations import ELU
 import keras
+from keras import backend as K
+from keras.models import Model
+from keras.layers import (Input, Lambda, BatchNormalization)
 
 def get_model_simple(classes=12):
-    input_shape = (99, 40, 1)
+    input_shape = (98, 40, 1)
     input = Input(shape=input_shape)
-    x = Conv2D(256, (10, 4), strides=(2, 4), use_bias=False)(input)
+    x = Conv2D(256, (10, 4), strides=(2, 1), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
-    x = Conv2D(256, (1, 2), strides=(1, 4), use_bias=False)(x)
+    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-    #
-    # x = Conv2D(256, (1, 2), strides=(1, 2), use_bias=False)(x)
-    # x = Activation('relu')(x)
-    # x = BatchNormalization()(x)
-    # x = Dropout(0.25)(x)
-
-    # x = Conv2D(256, (1, 4), strides=(1, 2), use_bias=False)(x)
-    # x = Activation('relu')(x)
-    # x = BatchNormalization()(x)
-    # x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    x = Dropout(0.5)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
+    x = Dropout(0.5)(x)
 
     x = GlobalAveragePooling2D()(x)
 
-    opt = optimizers.Adam(lr=0.0025)
+    opt = optimizers.Adam(lr=0.005)
     # opt = optimizers.Adadelta()
     if classes == 2:
         loss = losses.binary_crossentropy
@@ -321,6 +303,35 @@ def get_gru_model(classes=2):
     # x = Dense(classes, activation='softmax')(x)
 
     # model = Model(input, x)
+    opt = optimizers.Adam(lr=0.005)
+    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
+    return model
+
+
+def get_some_model(classes=2):
+    input_shape = (99, 40, 1)
+    input = Input(shape=input_shape)
+    x = Conv2D(32, (20, 5), strides=(8, 2), use_bias=False)(input)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+
+    # x = GlobalAveragePooling2D()(x)
+    x = Reshape((180, 32))(x)
+
+    x = GRU(32, activation='relu', return_sequences=True)(x)
+    x = GRU(32, return_sequences=False)(x)
+    x = Dense(64)(x)
+
+    if classes == 2:
+        loss = losses.binary_crossentropy
+        # x = TimeDistributed(Dense(classes, activation='sigmoid'))(x)
+        x = Dense(classes, activation='sigmoid')(x)
+    else:
+        loss = losses.categorical_crossentropy
+        # x = TimeDistributed(Dense(classes, activation='softmax'))(x)
+        x = Dense(classes, activation='softmax')(x)
+
+    model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
     model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
     return model

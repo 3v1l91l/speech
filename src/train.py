@@ -82,10 +82,11 @@ def get_train_valid_df():
 def get_data():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
-    train.drop(train[train.word.isin(['silence'])].index, inplace=True)
-    valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
-    train.reset_index(inplace=True)
-    valid.reset_index(inplace=True)
+    unknown_paths = train.path[train.word == 'unknown']
+    # train.drop(train[train.word.isin(['silence'])].index, inplace=True)
+    # valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
+    # train.reset_index(inplace=True)
+    # valid.reset_index(inplace=True)
 
     len_train = len(train.word.values)
     temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
@@ -95,7 +96,7 @@ def get_data():
     y_train = np.array(y_train.values)
     y_valid = np.array(y_valid.values)
 
-    return train, valid, y_train, y_valid, label_index, silence_paths
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
 
 def get_data_silence_not_silence():
     train, valid = get_train_valid_df()
@@ -130,7 +131,7 @@ def train_silence_model():
     train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels, original_labels_valid = get_data_silence_not_silence()
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
-    rand_unknown_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
+    rand_unknown_paths = silence_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     silence_model = get_model(classes=2)
@@ -150,19 +151,24 @@ def train_silence_model():
     )
 
 def train_model():
-    train, valid, y_train, y_valid, label_index, silence_paths = get_data()
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data()
 
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
+    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
+    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     # model = load_model('model.model')
+    model = get_model_simple(classes=12)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
-    model = get_model(classes=30)
+    # model = get_some_model(classes=30)
     model.summary()
     # model.load_weights('model.model')
-    train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
+    # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
+    # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
+    train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,
@@ -198,8 +204,8 @@ def validate_predictions():
     validate(test_internal_data_path, model, silence_model, label_index, silence_label_index)
 
 def main():
-    train_silence_model()
-    # train_model()
+    # train_silence_model()
+    train_model()
     # validate_predictions()
     # make_predictions()
 

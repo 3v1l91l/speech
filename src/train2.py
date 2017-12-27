@@ -135,9 +135,9 @@ def make_predictions():
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 def main():
-    # train_model()
+    train_model()
     # validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 if __name__ == "__main__":
     main()

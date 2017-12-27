@@ -7,6 +7,7 @@ import keras
 from keras import backend as K
 from keras.models import Model
 from keras.layers import (Input, Lambda, BatchNormalization)
+from keras.regularizers import l2
 
 def get_model_simple(classes=12):
     input_shape = (98, 40, 1)
@@ -43,17 +44,18 @@ def get_model_simple(classes=12):
 
     x = GlobalAveragePooling2D()(x)
 
-    opt = optimizers.Adam(lr=0.005)
-    # opt = optimizers.Adadelta()
     if classes == 2:
         loss = losses.binary_crossentropy
-        x = Dense(classes, activation='sigmoid')(x)
+        # x = TimeDistributed(Dense(classes, activation='sigmoid'))(x)
+        x = Dense(classes, activation='sigmoid', W_regularizer=l2(0.01))(x)
     else:
         loss = losses.categorical_crossentropy
-        x = Dense(classes, activation='softmax')(x)
+        # x = TimeDistributed(Dense(classes, activation='softmax'))(x)
+        x = Dense(classes, activation='softmax', W_regularizer=l2(0.01))(x)
 
     model = Model(input, x)
-    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
+    opt = optimizers.Adam(lr=0.005)
+    model.compile(optimizer=opt, loss=keras.losses.categorical_hinge, metrics=['categorical_accuracy'])
     return model
 
 def get_model(classes=12):
@@ -309,30 +311,43 @@ def get_gru_model(classes=2):
 
 
 def get_some_model(classes=2):
-    input_shape = (99, 40, 1)
+    input_shape = (98, 40)
     input = Input(shape=input_shape)
-    x = Conv2D(32, (20, 5), strides=(8, 2), use_bias=False)(input)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
+    # x = Conv2D(32, (20, 5), strides=(8, 2), use_bias=False)(input)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    #
+    # # x = GlobalAveragePooling2D()(x)
+    # x = Reshape((180, 32))(x)
 
-    # x = GlobalAveragePooling2D()(x)
-    x = Reshape((180, 32))(x)
-
-    x = GRU(32, activation='relu', return_sequences=True)(x)
-    x = GRU(32, return_sequences=False)(x)
-    x = Dense(64)(x)
+    x = GRU(256, return_sequences=True)(input)
+    x = Dropout(0.25)(x)
+    x = GRU(256, return_sequences=True)(x)
+    x = Dropout(0.25)(x)
+    x = GRU(256, return_sequences=True)(x)
+    x = Dropout(0.25)(x)
+    x = GRU(256, return_sequences=False)(x)
+    x = Dropout(0.25)(x)
+    x = Dense(256)(x)
 
     if classes == 2:
         loss = losses.binary_crossentropy
         # x = TimeDistributed(Dense(classes, activation='sigmoid'))(x)
-        x = Dense(classes, activation='sigmoid')(x)
+        x = Dense(classes, activation='sigmoid', W_regularizer=l2(0.01))(x)
     else:
         loss = losses.categorical_crossentropy
         # x = TimeDistributed(Dense(classes, activation='softmax'))(x)
-        x = Dense(classes, activation='softmax')(x)
+        x = Dense(classes, activation='softmax', W_regularizer=l2(0.01))(x)
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
-    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
+    model.compile(optimizer=opt, loss=customLoss, metrics=['categorical_accuracy'])
     return model
 
+import keras.backend as K
+
+def customLoss(yTrue,yPred):
+    diff = yPred - yTrue
+    return K.square(diff)
+
+    # return K.sum(K.log(yTrue) - K.log(yPred))

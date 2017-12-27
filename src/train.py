@@ -159,7 +159,8 @@ def train_model():
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     # model = load_model('model.model')
-    model = get_model_simple(classes=12)
+    # model = get_some_model(classes=12)
+    model = get_some_model(classes=12)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)

@@ -43,7 +43,7 @@ def get_specgrams(wavs):
     log_specgrams = [None] * len(wavs)
     fs = 16000
     for i in range(len(wavs)):
-        log_specgrams[i] = log_specgram(wavs[i], fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wavs[i], fs)#[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_augment_known(wavs, silences):
@@ -52,7 +52,7 @@ def get_specgrams_augment_known(wavs, silences):
     fs = 16000
     for i in range(len(wavs)):
         wav = augment_data(wavs[i], fs, silences)
-        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_augment_known_valid(wavs, silences):
@@ -61,7 +61,7 @@ def get_specgrams_augment_known_valid(wavs, silences):
     fs = 16000
     for i in range(len(wavs)):
         wav = augment_data_valid(wavs[i], fs, silences)
-        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_augment_unknown(wavs, silences, unknowns):
@@ -85,7 +85,7 @@ def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences, un
     duration = 1
     for i in range(len(wavs)):
         wav = augment_unknown(wavs[i], i in unknown_flip_known_ix, fs, silences, unknowns)
-        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_augment_silence(wavs, silences):
@@ -97,7 +97,7 @@ def get_specgrams_augment_silence(wavs, silences):
     duration = 1
     for i in range(len(wavs)):
         wav = augment_silence(wavs[i], fs, silences)
-        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
     return log_specgrams
 
 def log_specgram(audio, sr=16000):

@@ -75,13 +75,15 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         silence_prop = 0.15
         unknown_flip_known_prop = 0
         if validate:
-            unknown_flip_known_prop = 0.35
-            unknown_prop = 0
+            unknown_flip_known_prop = 0
+            # unknown_prop = 0
         batch_size_unknown_flip_known = math.ceil(unknown_flip_known_prop * batch_size)
         batch_size_unknown = math.ceil(unknown_prop * batch_size)
         batch_size_silence = math.ceil(silence_prop * batch_size)
         batch_size_known = batch_size - batch_size_unknown - batch_size_silence - batch_size_unknown_flip_known
-        unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
+        # unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
+        unknown_ix = np.random.choice(y_label[~y_label.isin(legal_labels)].index, size=batch_size_unknown)
+
         unknown_flip_known_ix = np.random.choice(y_label[y_label.isin(legal_labels_without_unknown_can_be_flipped)].index, size=batch_size_unknown_flip_known)
         silence_ix = np.random.choice(y_label[y_label == 'silence'].index, size=batch_size_silence)
         known_ix = np.random.choice(y_label[(y_label != 'unknown') & (y_label != 'silence')].index, size=batch_size_known)
@@ -95,7 +97,7 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix)+len(silence_ix):], silences))
 
         res_labels = np.concatenate((y[all_unknown_ix],y[silence_ix],y[known_ix]))
-        yield np.stack(specgrams), res_labels
+        yield np.stack(specgrams), np.argmax(res_labels,axis=1)
 
 
 @threadsafe_generator
@@ -130,14 +132,14 @@ def batch_generator_silence_paths(validate, X_paths, y, y_label, silences, unkno
         yield np.stack(specgrams), res_labels
 
 @threadsafe_generator
-def batch_generator_unknown_paths(validate, X_paths, y, y_label, silences, unknowns, original_labels, batch_size=128):
+def batch_generator_unknown(validate, X_paths, y, y_label, silences, unknowns, original_labels, batch_size=128):
     while True:
         # Try to represent classes distribution
         unknown_prop = 0.5
         batch_size_unknown_flip_known_prop = 0
         if validate:
-            batch_size_unknown_flip_known_prop = 0.3
-            unknown_prop = 0.2
+            batch_size_unknown_flip_known_prop = 0.4
+            unknown_prop = 0.1
         batch_size_unknown_flip_known = math.ceil(batch_size_unknown_flip_known_prop * batch_size)
         batch_size_unknown = math.ceil(unknown_prop * batch_size)
 
@@ -176,11 +178,11 @@ def test_data_generator(fpaths, batch=16):
         i += 1
         if i == batch:
             i = 0
-            imgs = np.array(imgs)[..., np.newaxis]
+            imgs = np.array(imgs)#[..., np.newaxis]
             # imgs = np.array(imgs)
             yield fnames, imgs
     if i < batch:
-        imgs = np.array(imgs)[..., np.newaxis]
+        imgs = np.array(imgs)#[..., np.newaxis]
         # imgs = np.array(imgs)
         yield fnames, imgs
     raise StopIteration()

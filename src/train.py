@@ -20,6 +20,9 @@ from generator import *
 from sklearn.metrics import confusion_matrix
 from model import *
 import seaborn as sn
+from keras.models import Model
+import lightgbm as lgb
+from sklearn.model_selection import StratifiedKFold
 
 L = 16000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
@@ -82,7 +85,8 @@ def get_train_valid_df():
 def get_data():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
-    unknown_paths = train.path[train.word == 'unknown']
+    # unknown_paths = train.path[train.word == 'unknown']
+    unknown_paths = train.path[~train.word.isin(legal_labels)]
     # train.drop(train[train.word.isin(['silence'])].index, inplace=True)
     # valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
     # train.reset_index(inplace=True)
@@ -97,6 +101,30 @@ def get_data():
     y_valid = np.array(y_valid.values)
 
     return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
+
+def get_data_unknown():
+    train, valid = get_train_valid_df()
+    original_labels = np.array(train.word.values)
+    train.loc[train.word.isin(recognized_labels), 'word'] = ['known']
+    valid.loc[valid.word.isin(recognized_labels), 'word'] = ['known']
+
+    silence_paths = train.path[train.word == 'silence']
+    unknown_paths = train.path[train.word == 'unknown']
+    # unknown_paths = train.path[~train.word.isin(legal_labels)]
+    train.drop(train[train.word.isin(['silence'])].index, inplace=True)
+    valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
+    train.reset_index(inplace=True)
+    valid.reset_index(inplace=True)
+
+    len_train = len(train.word.values)
+    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
+    y_train, y_valid = temp[:len_train], temp[len_train:]
+
+    label_index = y_train.columns.values
+    y_train = np.array(y_train.values)
+    y_valid = np.array(y_valid.values)
+
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels
 
 def get_data_silence_not_silence():
     train, valid = get_train_valid_df()
@@ -160,7 +188,7 @@ def train_model():
 
     # model = load_model('model.model')
     # model = get_some_model(classes=12)
-    model = get_some_model(classes=12)
+    model = get_some_model(classes=31)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)
@@ -170,6 +198,38 @@ def train_model():
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
+    model.fit_generator(
+        generator=train_gen,
+        epochs=100,
+        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
+        validation_data=valid_gen,
+        validation_steps=len(y_valid) // BATCH_SIZE // 4,
+        callbacks=get_callbacks('model'),
+        workers=4,
+        use_multiprocessing=False,
+        verbose=1
+    )
+
+def train_model_unknown():
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels = get_data_unknown()
+
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
+    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
+    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
+    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
+
+    # model = load_model('model.model')
+    # model = get_some_model(classes=12)
+    model = get_model_simple(classes=2)
+    # model = get_model(classes=30)
+    # model = get_model_simple(classes=30)
+    # model = get_some_model(classes=30)
+    model.summary()
+    # model.load_weights('model.model')
+    # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
+    # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
+    train_gen = batch_generator_unknown(False, train.path.values, y_train, train.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_unknown(True, valid.path.values, y_valid, valid.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,
@@ -206,7 +266,8 @@ def validate_predictions():
 
 def main():
     # train_silence_model()
-    train_model()
+    # train_model()
+    train_model_unknown()
     # validate_predictions()
     # make_predictions()
 

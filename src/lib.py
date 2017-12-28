@@ -73,7 +73,7 @@ def get_specgrams_augment_unknown(wavs, silences, unknowns):
     duration = 1
     for i in range(len(wavs)):
         wav = augment_unknown(wavs[i], False, fs, silences, unknowns)
-        log_specgrams[i] = log_specgram(wav, fs)[..., np.newaxis]
+        log_specgrams[i] = log_specgram(wav, fs)#[..., np.newaxis]
     return log_specgrams
 
 def get_specgrams_augment_unknown_flip(wavs, unknown_flip_known_ix, silences, unknowns):
@@ -179,7 +179,7 @@ def augment_unknown(y, surely_flip, sr, noises, unknowns):
         y_mod = 0.5 * y_mod + 0.5 * np.roll(unknown, int(sr * np.random.uniform(0.1, 0.5, 1)))
         y_mod = np.array(y_mod, dtype=np.int16)
 
-    augment_data(y_mod, sr, noises)
+    y_mod = augment_data(y_mod, sr, noises)
     return y_mod
 
 def augment_silence(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,

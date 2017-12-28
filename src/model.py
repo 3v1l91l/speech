@@ -15,22 +15,23 @@ def get_model_simple(classes=12):
     x = Conv2D(256, (10, 4), strides=(2, 1), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
+
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
@@ -324,11 +325,6 @@ def get_some_model(classes=2):
     x = Dropout(0.25)(x)
     x = GRU(256, return_sequences=True)(x)
     x = Dropout(0.25)(x)
-    x = GRU(256, return_sequences=True)(x)
-    x = Dropout(0.25)(x)
-    x = GRU(256, return_sequences=False)(x)
-    x = Dropout(0.25)(x)
-    x = Dense(256)(x)
 
     if classes == 2:
         loss = losses.binary_crossentropy
@@ -341,13 +337,6 @@ def get_some_model(classes=2):
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
-    model.compile(optimizer=opt, loss=customLoss, metrics=['categorical_accuracy'])
+    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
     return model
 
-import keras.backend as K
-
-def customLoss(yTrue,yPred):
-    diff = yPred - yTrue
-    return K.square(diff)
-
-    # return K.sum(K.log(yTrue) - K.log(yPred))

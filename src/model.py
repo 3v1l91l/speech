@@ -48,15 +48,15 @@ def get_model_simple(classes=12):
     if classes == 2:
         loss = losses.binary_crossentropy
         # x = TimeDistributed(Dense(classes, activation='sigmoid'))(x)
-        x = Dense(classes, activation='sigmoid', W_regularizer=l2(0.01))(x)
+        x = Dense(classes, activation='sigmoid')(x)
     else:
         loss = losses.categorical_crossentropy
         # x = TimeDistributed(Dense(classes, activation='softmax'))(x)
-        x = Dense(classes, activation='softmax', W_regularizer=l2(0.01))(x)
+        x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
-    model.compile(optimizer=opt, loss=keras.losses.categorical_hinge, metrics=['categorical_accuracy'])
+    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
     return model
 
 def get_model(classes=12):

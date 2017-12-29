@@ -1,5 +1,5 @@
 from keras import optimizers, losses, activations, models, applications
-from keras.layers import TimeDistributed, Bidirectional, SeparableConv2D, GRU, Reshape, GlobalAveragePooling2D, Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization, ZeroPadding2D, Activation, Conv2D
+from keras.layers import merge, TimeDistributed, Bidirectional, SeparableConv2D, GRU, Reshape, GlobalAveragePooling2D, Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization, ZeroPadding2D, Activation, Conv2D
 from keras.models import Sequential, Model
 import keras.layers as layers
 from keras.layers.advanced_activations import ELU
@@ -8,11 +8,13 @@ from keras import backend as K
 from keras.models import Model
 from keras.layers import (Input, Lambda, BatchNormalization)
 from keras.regularizers import l2
+import tpe
+import numpy as np
 
 def get_model_simple(classes=12):
     input_shape = (98, 40, 1)
     input = Input(shape=input_shape)
-    num = 512
+    num = 256
     x = Conv2D(num, (10, 4), strides=(2, 1), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
@@ -28,7 +30,6 @@ def get_model_simple(classes=12):
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-
     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
@@ -43,9 +44,12 @@ def get_model_simple(classes=12):
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
-
 
     x = GlobalAveragePooling2D()(x)
+
+    x = Dense(256)(x)
+    x = Activation('relu')(x)
+
 
     if classes == 2:
         loss = losses.binary_crossentropy
@@ -56,7 +60,7 @@ def get_model_simple(classes=12):
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
-    model.compile(optimizer=opt, loss=losses.categorical_hinge, metrics=['categorical_accuracy'])
+    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
     return model
 
 def get_model(classes=12):
@@ -340,3 +344,49 @@ def get_some_model(classes=2):
     model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
     return model
 
+
+
+
+def triplet_loss(y_true, y_pred):
+    return -K.mean(K.log(K.sigmoid(y_pred)))
+
+
+def triplet_merge(inputs):
+    a, p, n = inputs
+
+    return K.sum(a * (p - n), axis=1)
+
+
+def triplet_merge_shape(input_shapes):
+    return (input_shapes[0][0], 1)
+
+
+def build_tpe(n_in, n_out, W_pca=None):
+    a = Input(shape=(n_in,))
+    p = Input(shape=(n_in,))
+    n = Input(shape=(n_in,))
+
+    if W_pca is None:
+        W_pca = np.zeros((n_in, n_out))
+
+    base_model = Sequential()
+    base_model.add(Dense(n_out, input_dim=n_in, bias=False, weights=[W_pca], activation='linear'))
+    base_model.add(Lambda(lambda x: K.l2_normalize(x, axis=1)))
+
+    # base_model = Sequential()
+    # base_model.add(Dense(178, input_dim=n_in, bias=True, activation='relu'))
+    # base_model.add(Dense(n_out, bias=True, activation='tanh'))
+    # base_model.add(Lambda(lambda x: K.l2_normalize(x, axis=1)))
+
+    a_emb = base_model(a)
+    p_emb = base_model(p)
+    n_emb = base_model(n)
+
+    e = merge([a_emb, p_emb, n_emb], mode=triplet_merge, output_shape=triplet_merge_shape)
+
+    model = Model(input=[a, p, n], output=e)
+    predict = Model(input=a, output=a_emb)
+
+    model.compile(loss=triplet_loss, optimizer='rmsprop')
+
+    return model, predict

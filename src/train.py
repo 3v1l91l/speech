@@ -23,7 +23,10 @@ import seaborn as sn
 from keras.models import Model
 import lightgbm as lgb
 from sklearn.model_selection import StratifiedKFold
+from bottleneck import Bottleneck
+# from identification import get_scores, calc_metrics
 
+from sklearn.decomposition import PCA
 L = 16000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 legal_labels_without_silence = 'yes no up down left right on off stop go unknown'.split()
@@ -102,52 +105,6 @@ def get_data():
 
     return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
 
-def get_data_unknown():
-    train, valid = get_train_valid_df()
-    original_labels = np.array(train.word.values)
-
-
-    silence_paths = train.path[train.word == 'silence']
-    unknown_paths = train.path[train.word == 'unknown']
-    # unknown_paths = train.path[~train.word.isin(legal_labels)]
-    train.drop(train[train.word.isin(['silence'])].index, inplace=True)
-    valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
-    train.reset_index(inplace=True)
-    valid.reset_index(inplace=True)
-    original_labels = np.array(train.word.values)
-    original_labels_valid = np.array(valid.word.values)
-    train.loc[train.word.isin(recognized_labels), 'word'] = ['known']
-    valid.loc[valid.word.isin(recognized_labels), 'word'] = ['known']
-
-    len_train = len(train.word.values)
-    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
-    y_train, y_valid = temp[:len_train], temp[len_train:]
-
-    label_index = y_train.columns.values
-    y_train = np.array(y_train.values)
-    y_valid = np.array(y_valid.values)
-
-    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels, original_labels_valid
-
-def get_data_silence_not_silence():
-    train, valid = get_train_valid_df()
-    silence_paths = train.path[train.word == 'silence']
-    unknown_paths = train.path[train.word != 'silence']
-    original_labels = np.array(train.word.values)
-    original_labels_valid = np.array(valid.word.values)
-
-    len_train = len(train.word.values)
-    train.loc[train.word != 'silence', 'word'] = ['unknown']
-    valid.loc[valid.word != 'silence', 'word'] = ['unknown']
-    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
-    y_train, y_valid = temp[:len_train], temp[len_train:]
-
-    label_index = y_train.columns.values
-    y_train = np.array(y_train.values)
-    y_valid = np.array(y_valid.values)
-
-    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels, original_labels_valid
-
 def get_callbacks(model_name='model'):
     model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_categorical_accuracy', save_best_only=True, save_weights_only=False,
                                        verbose=1)
@@ -157,29 +114,6 @@ def get_callbacks(model_name='model'):
     lr_tracker = LearningRateTracker()
     return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]
 
-
-def train_silence_model():
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels, original_labels_valid = get_data_silence_not_silence()
-    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
-    rand_unknown_paths = silence_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
-    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
-
-    silence_model = get_model(classes=2)
-    # silence_model.load_weights('model_silence.model')
-    train_gen = batch_generator_silence_paths(False, train.path.values, y_train, train.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_silence_paths(True, valid.path.values, y_valid, valid.word, silences, unknowns, original_labels_valid, batch_size=BATCH_SIZE)
-    silence_model.fit_generator(
-        generator=train_gen,
-        epochs=20,
-        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
-        validation_data=valid_gen,
-        validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks('model_silence'),
-        workers=4,
-        use_multiprocessing=False,
-        verbose=1
-    )
 
 def train_model():
     train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data()
@@ -191,7 +125,7 @@ def train_model():
 
     # model = load_model('model.model')
     # model = get_some_model(classes=12)
-    model = get_some_model(classes=31)
+    model = get_model_simple(classes=31)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)
@@ -201,38 +135,6 @@ def train_model():
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
-    model.fit_generator(
-        generator=train_gen,
-        epochs=100,
-        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
-        validation_data=valid_gen,
-        validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks('model'),
-        workers=4,
-        use_multiprocessing=False,
-        verbose=1
-    )
-
-def train_model_unknown():
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels, original_labels_valid = get_data_unknown()
-
-    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
-    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
-    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
-
-    # model = load_model('model.model')
-    # model = get_some_model(classes=12)
-    model = get_model_simple(classes=2)
-    # model = get_model(classes=30)
-    # model = get_model_simple(classes=30)
-    # model = get_some_model(classes=30)
-    model.summary()
-    # model.load_weights('model.model')
-    # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
-    # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
-    train_gen = batch_generator_unknown(False, train.path.values, y_train, train.word, silences, unknowns, original_labels, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_unknown(True, valid.path.values, y_valid, valid.word, silences, unknowns, original_labels_valid, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,
@@ -267,10 +169,53 @@ def validate_predictions():
     silence_model = load_model('model_silence.model')
     validate(test_internal_data_path, model, silence_model, label_index, silence_label_index)
 
+def get_emb(bottleneck, fpaths):
+    results = []
+    batch = 128
+    for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
+        predicts = bottleneck.predict(imgs)
+        results.extend(predicts)
+    return results
+
+def train_tpe():
+    n_in = 256
+    n_out = 256
+
+    model = get_model_simple(31)
+    model.load_weights('model.model')
+    bottleneck = Bottleneck(model, ~1)
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data()
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
+    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
+
+    train_emb = bottleneck.predict(train.path.values, batch_size=256)
+    dev_emb = bottleneck.predict(valid.path.values, batch_size=256)
+
+    pca = PCA(n_out)
+    pca.fit(train_emb)
+    W_pca = pca.components_
+
+    tpe, tpe_pred = build_tpe(n_in, n_out, W_pca.T)
+    # tpe.load_weights('data/weights/weights.tpe.mineer.h5')
+
+    NB_EPOCH = 5000
+    COLD_START = NB_EPOCH
+    BATCH_SIZE = 4
+    BIG_BATCH_SIZE = 512
+
+    z = np.zeros((BIG_BATCH_SIZE,))
+
+
+    for e in range(NB_EPOCH):
+        print('epoch: {}'.format(e))
+        a, p, n = get_triplet_batch(train.path.values, y_train, train.word, silences)
+        tpe.fit([a, p, n], z, batch_size=BATCH_SIZE, nb_epoch=1)
+
 def main():
     # train_silence_model()
     # train_model()
-    train_model_unknown()
+    train_tpe()
+    # train_model_unknown()
     # validate_predictions()
     # make_predictions()
 

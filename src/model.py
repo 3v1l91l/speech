@@ -12,51 +12,51 @@ from keras.regularizers import l2
 def get_model_simple(classes=12):
     input_shape = (98, 40, 1)
     input = Input(shape=input_shape)
-    x = Conv2D(256, (10, 4), strides=(2, 1), use_bias=False)(input)
+    num = 512
+    x = Conv2D(num, (10, 4), strides=(2, 1), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(num, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
 
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
+
 
     x = GlobalAveragePooling2D()(x)
 
     if classes == 2:
         loss = losses.binary_crossentropy
-        # x = TimeDistributed(Dense(classes, activation='sigmoid'))(x)
         x = Dense(classes, activation='sigmoid')(x)
     else:
         loss = losses.categorical_crossentropy
-        # x = TimeDistributed(Dense(classes, activation='softmax'))(x)
         x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
-    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
+    model.compile(optimizer=opt, loss=losses.categorical_hinge, metrics=['categorical_accuracy'])
     return model
 
 def get_model(classes=12):

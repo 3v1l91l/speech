@@ -200,12 +200,12 @@ def train_tpe():
     pca.fit(train_emb)
     W_pca = pca.components_
     tpe, tpe_pred = build_tpe(n_in, n_out, W_pca.T)
-    tpe.load_weights('mineer.h5')
+    # tpe.load_weights('mineer.h5')
 
-    NB_EPOCH = 50000
+    NB_EPOCH = 500000
     COLD_START = NB_EPOCH
     BATCH_SIZE = 4
-    BIG_BATCH_SIZE = 20000
+    BIG_BATCH_SIZE = 1000
 
     z = np.zeros((BIG_BATCH_SIZE,))
 
@@ -214,6 +214,7 @@ def train_tpe():
         word_true = valid.word.values == word
         dev_protocol[np.outer(word_true, word_true)] = True
 
+    mineer = float('inf')
     for e in range(NB_EPOCH):
         print('epoch: {}'.format(e))
         a, p, n = get_triplet_batch(tpe_pred, train_emb, y_train, train.word, batch_size=BIG_BATCH_SIZE)
@@ -221,7 +222,8 @@ def train_tpe():
         if e !=0 and e%50 == 0:
             eer = test(tpe_pred, dev_emb, dev_protocol)
             print('EER: {:.2f}'.format(eer * 100))
-            tpe.save_weights('mineer.h5')
+            if eer < mineer:
+                tpe.save_weights('mineer.h5')
 
 def test(tpe_pred, dev_emb, dev_protocol):
     dev_emb2 = tpe_pred.predict(dev_emb)

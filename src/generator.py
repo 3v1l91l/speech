@@ -76,17 +76,17 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         yield np.stack(specgrams), res_labels
 
 
-def get_triplet_batch(X_paths, y, y_label, silences, batch_size=128):
-    set_labels = np.array(set(y_label))
+def get_triplet_batch(tpe_pred, X, y, y_label, batch_size=128):
+    set_labels = np.array(list(set(y_label)))
     positive_label = np.random.choice(set_labels, 1)
-    positive_ix = np.random.choice(y_label[y_label.isin([positive_label])].index, size=batch_size*2)
-    negative_ix = np.random.choice(y_label[~y_label.isin([positive_label])].index, size=batch_size)
-    X = list(map(load_wav_by_path, np.concatenate((X_paths[positive_ix], X_paths[negative_ix]))))
+    print(positive_label)
+    positive_ix = np.random.choice(y_label[y_label.isin(positive_label)].index, size=batch_size*2)
+    negative_ix = np.random.choice(y_label[~y_label.isin(positive_label)].index, size=batch_size)
 
-    positive_samples = get_specgrams_augment_known(X[:len(positive_ix // 2)], silences)
-    anchor_samples = get_specgrams_augment_known(X[len(positive_ix // 2) : len(positive_ix)], silences)
-    negative_samples = get_specgrams_augment_known(X[len(positive_ix // 2) : len(positive_ix)], silences)
-    yield positive_samples, anchor_samples, negative_samples
+    positive_samples = tpe_pred.predict(X[positive_ix[:len(positive_ix)//2]])
+    anchor_samples = tpe_pred.predict(X[positive_ix[len(positive_ix)//2:]])
+    negative_samples = tpe_pred.predict(X[negative_ix])
+    return positive_samples, anchor_samples, negative_samples
 
 def test_data_generator(fpaths, batch=16):
     i = 0

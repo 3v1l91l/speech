@@ -200,6 +200,7 @@ def train_tpe():
     pca.fit(train_emb)
     W_pca = pca.components_
     tpe, tpe_pred = build_tpe(n_in, n_out, W_pca.T)
+    tpe.load_weights('mineer.h5')
 
     NB_EPOCH = 50000
     COLD_START = NB_EPOCH
@@ -220,6 +221,7 @@ def train_tpe():
         if e !=0 and e%50 == 0:
             eer = test(tpe_pred, dev_emb, dev_protocol)
             print('EER: {:.2f}'.format(eer * 100))
+            tpe.save_weights('mineer.h5')
 
 def test(tpe_pred, dev_emb, dev_protocol):
     dev_emb2 = tpe_pred.predict(dev_emb)

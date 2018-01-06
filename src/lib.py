@@ -33,10 +33,10 @@ def get_path_label_df(path, pattern='**' + os.sep + '*.wav'):
 
 def prepare_data(df):
     words = df.word.unique().tolist()
-    # unknown = [w for w in words if w not in legal_labels]
+    unknown = [w for w in words if w not in legal_labels]
     df = df.drop(df[df.word.isin(['_background_noise_'])].index)
     df.reset_index(inplace=True)
-    # df.loc[df.word.isin(unknown), 'word'] = 'unknown'
+    df.loc[df.word.isin(unknown), 'word'] = 'unknown'
     return df
 
 def get_specgrams(wavs):

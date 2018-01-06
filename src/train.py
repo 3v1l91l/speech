@@ -30,6 +30,7 @@ from sklearn.decomposition import PCA
 L = 16000
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 legal_labels_without_silence = 'yes no up down left right on off stop go unknown'.split()
+legal_labels_without_unknown = 'yes no up down left right on off stop go silence'.split()
 recognized_labels = 'yes no up down left right on off stop go'.split()
 root_path = r'..'
 out_path = r'.'
@@ -42,22 +43,18 @@ background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 BATCH_SIZE = 128
 
-def get_predicts(fpaths, model, silence_model, label_index, silence_label_index):
+def get_predicts(fpaths, model, label_index):
     # fpaths = np.random.choice(fpaths, 1000)
-    label_index[~np.isin(label_index, legal_labels)] = 'unknown'
+    # label_index[~np.isin(label_index, legal_labels)] = 'unknown'
     index = []
     results = []
     batch = 128
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
-        silence_predicted_probabilities = silence_model.predict(imgs)
         predicted_probabilities = model.predict(imgs)
+        # print(len(predicted_probabilities))
         predicts = []
-        silence_label_index_ix = np.where(silence_label_index == 'silence')
-        unknown_label_index_ix = np.where(silence_label_index == 'unknown')
         for i in range(len(fnames)):
-            if(np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix):
-                predicts.extend(['silence'])
-            elif(np.argmax(predicted_probabilities[i]) > 0.95):
+            if(np.argmax(predicted_probabilities[i]) > 0.8):
                 # print(np.max(predicted_probabilities[i]))
                 predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
             else:
@@ -67,11 +64,10 @@ def get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
         results.extend(predicts)
     return index, results
 
-def validate(path, model, silence_model, label_index, silence_label_index):
+def validate(path, model, label_index):
     valid = prepare_data(get_path_label_df(path))
     y_true = np.array(valid.word.values)
-    y_true[~np.isin(y_true, legal_labels)] = 'unknown'
-    _, y_pred = get_predicts(valid.path.values, model, silence_model, label_index, silence_label_index)
+    _, y_pred = get_predicts(valid.path.values, model, label_index)
     labels = legal_labels
     # labels = next(os.walk(train_data_path))[1]
     confusion = confusion_matrix(y_true, y_pred, labels)
@@ -89,7 +85,7 @@ def get_data():
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
     # unknown_paths = train.path[train.word == 'unknown']
-    unknown_paths = train.path[~train.word.isin(legal_labels)]
+    unknown_paths = train.path[~train.word.isin(legal_labels_without_unknown)]
     # train.drop(train[train.word.isin(['silence'])].index, inplace=True)
     # valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
     # train.reset_index(inplace=True)
@@ -125,12 +121,12 @@ def train_model():
 
     # model = load_model('model.model')
     # model = get_some_model(classes=12)
-    model = get_model_simple(classes=31)
+    model = get_model_simple(label_index, classes=12)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)
     model.summary()
-    # model.load_weights('model.model')
+    # model.load_weights('model2.model')
     # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
@@ -148,14 +144,14 @@ def train_model():
     )
 
 def make_predictions():
-    _, _, _, _, label_index, _ = get_data()
-    _, _, _, _, silence_label_index, _, _, _, _ = get_data_silence_not_silence()
-    model = load_model('model.model')
-    silence_model = load_model('model_silence.model')
+    _, _, _, _, label_index, _, _ = get_data()
+    model = get_model_simple(classes=12)
+    model.load_weights('model2.model')
+
     fpaths = glob(os.path.join(test_data_path, '*wav'))
     fpaths = np.random.choice(fpaths, 5000)
     # fpaths = glob(os.path.join(test_data_path, 'clip_2e4ba4c25.wav'))
-    index, results = get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
+    index, results = get_predicts(fpaths, model, label_index)
 
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
@@ -163,11 +159,12 @@ def make_predictions():
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 def validate_predictions():
-    _, _, _, _, label_index, _ = get_data()
-    _, _, _, _, silence_label_index, _, _, _, _ = get_data_silence_not_silence()
-    model = load_model('model.model')
-    silence_model = load_model('model_silence.model')
-    validate(test_internal_data_path, model, silence_model, label_index, silence_label_index)
+    _, _, _, _, label_index, _, _ = get_data()
+    # model = load_model('model2.model')
+    model = get_model_simple(classes=12)
+    model.load_weights('model.model')
+
+    validate(test_internal_data_path, model, label_index)
 
 def get_emb(bottleneck, fpaths):
     results = []
@@ -214,16 +211,18 @@ def train_tpe():
         word_true = valid.word.values == word
         dev_protocol[np.outer(word_true, word_true)] = True
 
-    mineer = float('inf')
-    for e in range(NB_EPOCH):
-        print('epoch: {}'.format(e))
-        a, p, n = get_triplet_batch(tpe_pred, train_emb, y_train, train.word, batch_size=BIG_BATCH_SIZE)
-        tpe.fit([a, p, n], z, batch_size=BATCH_SIZE, epochs=1)
-        if e !=0 and e%50 == 0:
-            eer = test(tpe_pred, dev_emb, dev_protocol)
-            print('EER: {:.2f}'.format(eer * 100))
-            if eer < mineer:
-                tpe.save_weights('mineer.h5')
+    test(tpe_pred, dev_emb, dev_protocol)
+    # mineer = float('inf')
+    # for e in range(NB_EPOCH):
+    #     print('epoch: {}'.format(e))
+    #     a, p, n = get_triplet_batch(tpe_pred, train_emb, y_train, train.word, batch_size=BIG_BATCH_SIZE)
+    #     tpe.fit([a, p, n], z, batch_size=BATCH_SIZE, epochs=1)
+    #     if e !=0 and e%50 == 0:
+    #         eer = test(tpe_pred, dev_emb, dev_protocol)
+    #         print('EER: {:.2f}'.format(eer * 100))
+    #         if eer < mineer:
+    #             mineer = eer
+    #             tpe.save_weights('mineer.h5')
 
 def test(tpe_pred, dev_emb, dev_protocol):
     dev_emb2 = tpe_pred.predict(dev_emb)
@@ -273,8 +272,8 @@ def calc_metrics(targets_scores, imposter_scores):
 
 def main():
     # train_silence_model()
-    # train_model()
-    train_tpe()
+    train_model()
+    # train_tpe()
     # train_model_unknown()
     # validate_predictions()
     # make_predictions()

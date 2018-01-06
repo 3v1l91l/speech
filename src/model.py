@@ -11,7 +11,7 @@ from keras.regularizers import l2
 import tpe
 import numpy as np
 
-def get_model_simple(classes=12):
+def get_model_simple(label_index, classes=12):
     input_shape = (98, 40, 1)
     input = Input(shape=input_shape)
     num = 256
@@ -52,16 +52,34 @@ def get_model_simple(classes=12):
 
 
     if classes == 2:
-        loss = losses.binary_crossentropy
+        # loss = losses.binary_crossentropy
         x = Dense(classes, activation='sigmoid')(x)
     else:
-        loss = losses.categorical_crossentropy
-        x = Dense(classes, activation='softmax')(x)
+        # loss = losses.categorical_crossentropy
+        # loss = custom_categorical_crossentropy
+        # x = Dense(classes, activation='softmax')(x)
+        x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
+    # opt = optimizers.Adam(lr=0.005)
     opt = optimizers.Adam(lr=0.005)
-    model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])
+    model.compile(optimizer=opt, loss=customLoss(label_index), metrics=['categorical_accuracy'])
     return model
+
+def customLoss(label_index):
+    def lossFunction(y_true,y_pred):
+        z = np.zeros(len(label_index), dtype=bool)
+        z[label_index == ['unknown']] = True
+        var = K.constant(np.array(z), dtype='float32')
+        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred * var, y_pred)
+
+        # return K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), K.binary_crossentropy(y_true, var), K.binary_crossentropy(y_true, y_pred))
+        #
+        # # mmax = K.max(y_pred, axis=0)
+        # # y_pred = K.greater_equal(y_pred, mmax)
+        return K.binary_crossentropy(y_true, y_pred)
+
+    return lossFunction
 
 def get_model(classes=12):
     weight_decay = 1e-4

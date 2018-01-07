@@ -5,7 +5,6 @@ from glob import glob
 import re
 import pandas as pd
 import gc
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TensorBoard
 from keras.models import load_model
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -101,14 +100,7 @@ def get_data():
 
     return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
 
-def get_callbacks(model_name='model'):
-    model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_categorical_accuracy', save_best_only=True, save_weights_only=False,
-                                       verbose=1)
-    early_stopping = EarlyStopping(monitor='val_categorical_accuracy', patience=5, verbose=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=0, verbose=1)
-    tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
-    lr_tracker = LearningRateTracker()
-    return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]
+
 
 
 def train_model():
@@ -121,12 +113,12 @@ def train_model():
 
     # model = load_model('model.model')
     # model = get_some_model(classes=12)
-    model = get_model_simple(label_index, classes=12)
+    model = get_model(label_index, classes=12)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)
     model.summary()
-    # model.load_weights('model2.model')
+    # model.load_weights('model.model')
     # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
@@ -137,7 +129,7 @@ def train_model():
         steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks('model'),
+        callbacks=get_callbacks(label_index, 'model2'),
         workers=4,
         use_multiprocessing=False,
         verbose=1
@@ -146,7 +138,7 @@ def train_model():
 def make_predictions():
     _, _, _, _, label_index, _, _ = get_data()
     model = get_model_simple(classes=12)
-    model.load_weights('model2.model')
+    model.load_weights('model.model')
 
     fpaths = glob(os.path.join(test_data_path, '*wav'))
     fpaths = np.random.choice(fpaths, 5000)

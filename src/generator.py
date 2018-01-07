@@ -4,21 +4,11 @@ import threading
 import math
 from multiprocessing import Pool
 import os
-from keras.callbacks import Callback
 
 legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
 legal_labels_without_unknown = 'yes no up down left right on off stop go silence'.split()
 legal_labels_without_unknown_and_silence = 'yes no up down left right on off stop go'.split()
 legal_labels_without_unknown_can_be_flipped = [x for x in legal_labels_without_unknown_and_silence if x[::-1] not in legal_labels_without_unknown_and_silence]
-
-from keras import backend as K
-class LearningRateTracker(Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        lr = self.model.optimizer.lr
-        decay = self.model.optimizer.decay
-        iterations = self.model.optimizer.iterations
-        lr_with_decay = lr / (1. + decay * K.cast(iterations, K.dtype(decay)))
-        print("Learning rate: {}".format(K.eval(lr_with_decay)))
 
 class threadsafe_iter:
     """Takes an iterator/generator and makes it thread-safe by
@@ -67,8 +57,8 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
 
         specgrams = []
 
-        # specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
-        specgrams.extend(get_specgrams_augment_unknown(X[:len(all_unknown_ix)], silences, unknowns))
+        specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
+        # specgrams.extend(get_specgrams_augment_unknown(X[:len(all_unknown_ix)], silences, unknowns))
         specgrams.extend(get_specgrams_augment_silence(X[len(all_unknown_ix):len(all_unknown_ix) + len(silence_ix)], silences))
         specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix)+len(silence_ix):], silences))
 

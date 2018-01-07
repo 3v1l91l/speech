@@ -92,24 +92,36 @@ def custom_loss(label_index):
         z = np.zeros(len(label_index), dtype=bool)
         z[label_index == ['unknown']] = True
         var = K.constant(np.array(z), dtype='float32')
+        y_pred = K.print_tensor(y_pred)
+
+
         y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred * var, y_pred)
 
         # return K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), K.binary_crossentropy(y_true, var), K.binary_crossentropy(y_true, y_pred))
         #
-        # # mmax = K.max(y_pred, axis=0)
+
+
         # # y_pred = K.greater_equal(y_pred, mmax)
-        return K.categorical_crossentropy(y_true, y_pred)
+        return categorical_hinge(y_true, y_pred)
 
     return custom_loss_in
+
+def categorical_hinge(y_true, y_pred):
+    pos = K.sum(y_true * y_pred, axis=-1)
+    neg = K.max((1. - y_true) * y_pred, axis=-1)
+    return K.maximum(0., neg - pos + 1.)
 
 def custom_accuracy(label_index):
     def custom_accuracy_in(y_true, y_pred):
         z = np.zeros(len(label_index), dtype=bool)
         z[label_index == ['unknown']] = True
         var = K.constant(np.array(z), dtype='float32')
+
+        y_pred = K.print_tensor(y_pred)
+
+
         y_pred2 = y_pred * var
         y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred2, y_pred)
-        # y_pred = K.print_tensor(y_pred)
 
         return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
     return custom_accuracy_in

@@ -157,109 +157,109 @@ def validate_predictions():
     model.load_weights('model.model')
 
     validate(test_internal_data_path, model, label_index)
-
-def get_emb(bottleneck, fpaths):
-    results = []
-    batch = 128
-    for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
-        predicts = bottleneck.predict(imgs)
-        results.extend(predicts)
-    return results
-
-def train_tpe():
-    n_in = 256
-    n_out = 256
-
-    model = get_model_simple(31)
-    model.load_weights('model.model')
-    bottleneck = Bottleneck(model, ~1)
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data()
-    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
-
-    # train_emb = bottleneck.predict(train.path.values, batch_size=256)
-    # np.save('train_emb', train_emb)
-    train_emb = np.load('train_emb.npy')
-    # dev_emb = bottleneck.predict(valid.path.values, batch_size=256)
-    # np.save('dev_emb', dev_emb)
-    dev_emb = np.load('dev_emb.npy')
-
-
-    pca = PCA(n_out)
-    pca.fit(train_emb)
-    W_pca = pca.components_
-    tpe, tpe_pred = build_tpe(n_in, n_out, W_pca.T)
-    # tpe.load_weights('mineer.h5')
-
-    NB_EPOCH = 500000
-    COLD_START = NB_EPOCH
-    BATCH_SIZE = 4
-    BIG_BATCH_SIZE = 1000
-
-    z = np.zeros((BIG_BATCH_SIZE,))
-
-    dev_protocol = np.zeros((len(valid.word.values), len(valid.word.values)), dtype=np.bool)
-    for word in list(set(valid.word.values)):
-        word_true = valid.word.values == word
-        dev_protocol[np.outer(word_true, word_true)] = True
-
-    test(tpe_pred, dev_emb, dev_protocol)
-    # mineer = float('inf')
-    # for e in range(NB_EPOCH):
-    #     print('epoch: {}'.format(e))
-    #     a, p, n = get_triplet_batch(tpe_pred, train_emb, y_train, train.word, batch_size=BIG_BATCH_SIZE)
-    #     tpe.fit([a, p, n], z, batch_size=BATCH_SIZE, epochs=1)
-    #     if e !=0 and e%50 == 0:
-    #         eer = test(tpe_pred, dev_emb, dev_protocol)
-    #         print('EER: {:.2f}'.format(eer * 100))
-    #         if eer < mineer:
-    #             mineer = eer
-    #             tpe.save_weights('mineer.h5')
-
-def test(tpe_pred, dev_emb, dev_protocol):
-    dev_emb2 = tpe_pred.predict(dev_emb)
-    tsc, isc = get_scores(dev_emb2, dev_protocol)
-    eer, _, _, _ = calc_metrics(tsc, isc)
-    return eer
-
-
-def get_scores(data_y, protocol):
-    data_y = data_y / np.linalg.norm(data_y, axis=1)[:, np.newaxis]
-    scores = data_y @ data_y.T
-
-    return scores[protocol], scores[np.logical_not(protocol)]
-
-
-def calc_metrics(targets_scores, imposter_scores):
-    min_score = np.minimum(np.min(targets_scores), np.min(imposter_scores))
-    max_score = np.maximum(np.max(targets_scores), np.max(imposter_scores))
-
-    n_tars = len(targets_scores)
-    n_imps = len(imposter_scores)
-
-    N = 100
-
-    fars = np.zeros((N,))
-    frrs = np.zeros((N,))
-    dists = np.zeros((N,))
-
-    min_gap = float('inf')
-    eer = 0
-
-    for i, dist in enumerate(np.linspace(min_score, max_score, N)):
-        far = len(np.where(imposter_scores > dist)[0]) / n_imps
-        frr = len(np.where(targets_scores < dist)[0]) / n_tars
-        fars[i] = far
-        frrs[i] = frr
-        dists[i] = dist
-
-        gap = np.abs(far - frr)
-
-        if gap < min_gap:
-            min_gap = gap
-            eer = (far + frr) / 2
-
-    return eer, fars, frrs, dists
+#
+# def get_emb(bottleneck, fpaths):
+#     results = []
+#     batch = 128
+#     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
+#         predicts = bottleneck.predict(imgs)
+#         results.extend(predicts)
+#     return results
+#
+# def train_tpe():
+#     n_in = 256
+#     n_out = 256
+#
+#     model = get_model_simple(31)
+#     model.load_weights('model.model')
+#     bottleneck = Bottleneck(model, ~1)
+#     train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data()
+#     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
+#     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
+#
+#     # train_emb = bottleneck.predict(train.path.values, batch_size=256)
+#     # np.save('train_emb', train_emb)
+#     train_emb = np.load('train_emb.npy')
+#     # dev_emb = bottleneck.predict(valid.path.values, batch_size=256)
+#     # np.save('dev_emb', dev_emb)
+#     dev_emb = np.load('dev_emb.npy')
+#
+#
+#     pca = PCA(n_out)
+#     pca.fit(train_emb)
+#     W_pca = pca.components_
+#     tpe, tpe_pred = build_tpe(n_in, n_out, W_pca.T)
+#     # tpe.load_weights('mineer.h5')
+#
+#     NB_EPOCH = 500000
+#     COLD_START = NB_EPOCH
+#     BATCH_SIZE = 4
+#     BIG_BATCH_SIZE = 1000
+#
+#     z = np.zeros((BIG_BATCH_SIZE,))
+#
+#     dev_protocol = np.zeros((len(valid.word.values), len(valid.word.values)), dtype=np.bool)
+#     for word in list(set(valid.word.values)):
+#         word_true = valid.word.values == word
+#         dev_protocol[np.outer(word_true, word_true)] = True
+#
+#     test(tpe_pred, dev_emb, dev_protocol)
+#     # mineer = float('inf')
+#     # for e in range(NB_EPOCH):
+#     #     print('epoch: {}'.format(e))
+#     #     a, p, n = get_triplet_batch(tpe_pred, train_emb, y_train, train.word, batch_size=BIG_BATCH_SIZE)
+#     #     tpe.fit([a, p, n], z, batch_size=BATCH_SIZE, epochs=1)
+#     #     if e !=0 and e%50 == 0:
+#     #         eer = test(tpe_pred, dev_emb, dev_protocol)
+#     #         print('EER: {:.2f}'.format(eer * 100))
+#     #         if eer < mineer:
+#     #             mineer = eer
+#     #             tpe.save_weights('mineer.h5')
+#
+# def test(tpe_pred, dev_emb, dev_protocol):
+#     dev_emb2 = tpe_pred.predict(dev_emb)
+#     tsc, isc = get_scores(dev_emb2, dev_protocol)
+#     eer, _, _, _ = calc_metrics(tsc, isc)
+#     return eer
+#
+#
+# def get_scores(data_y, protocol):
+#     data_y = data_y / np.linalg.norm(data_y, axis=1)[:, np.newaxis]
+#     scores = data_y @ data_y.T
+#
+#     return scores[protocol], scores[np.logical_not(protocol)]
+#
+#
+# def calc_metrics(targets_scores, imposter_scores):
+#     min_score = np.minimum(np.min(targets_scores), np.min(imposter_scores))
+#     max_score = np.maximum(np.max(targets_scores), np.max(imposter_scores))
+#
+#     n_tars = len(targets_scores)
+#     n_imps = len(imposter_scores)
+#
+#     N = 100
+#
+#     fars = np.zeros((N,))
+#     frrs = np.zeros((N,))
+#     dists = np.zeros((N,))
+#
+#     min_gap = float('inf')
+#     eer = 0
+#
+#     for i, dist in enumerate(np.linspace(min_score, max_score, N)):
+#         far = len(np.where(imposter_scores > dist)[0]) / n_imps
+#         frr = len(np.where(targets_scores < dist)[0]) / n_tars
+#         fars[i] = far
+#         frrs[i] = frr
+#         dists[i] = dist
+#
+#         gap = np.abs(far - frr)
+#
+#         if gap < min_gap:
+#             min_gap = gap
+#             eer = (far + frr) / 2
+#
+#     return eer, fars, frrs, dists
 
 
 def main():

@@ -102,14 +102,13 @@ def custom_loss(label_index):
 
 
         # # y_pred = K.greater_equal(y_pred, mmax)
-        return categorical_hinge(y_true, y_pred)
+        return hinge(y_true, y_pred)
 
     return custom_loss_in
 
-def categorical_hinge(y_true, y_pred):
-    pos = K.sum(y_true * y_pred, axis=-1)
-    neg = K.max((1. - y_true) * y_pred, axis=-1)
-    return K.maximum(0., neg - pos + 1.)
+def hinge(y_true, y_pred):
+    return K.mean(K.maximum(1. - y_true * y_pred, 0.), axis=-1)
+
 
 def custom_accuracy(label_index):
     def custom_accuracy_in(y_true, y_pred):

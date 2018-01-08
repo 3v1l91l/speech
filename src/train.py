@@ -53,11 +53,13 @@ def get_predicts(fpaths, model, label_index):
         # print(len(predicted_probabilities))
         predicts = []
         for i in range(len(fnames)):
-            if(np.argmax(predicted_probabilities[i]) > 0.8):
-                # print(np.max(predicted_probabilities[i]))
-                predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
-            else:
-                predicts.extend(['unknown'])
+            # print(np.max(predicted_probabilities[i]))
+            # if(np.argmax(predicted_probabilities[i]) > 0.5):
+            #     # print(np.max(predicted_probabilities[i]))
+            #     predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
+            # else:
+            #     predicts.extend(['unknown'])
+            predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
 
         index.extend(fnames)
         results.extend(predicts)
@@ -66,10 +68,12 @@ def get_predicts(fpaths, model, label_index):
 def validate(path, model, label_index):
     valid = prepare_data(get_path_label_df(path))
     y_true = np.array(valid.word.values)
-    _, y_pred = get_predicts(valid.path.values, model, label_index)
+    ix = np.random.choice(range(len(y_true)), 5000)
+
+    _, y_pred = get_predicts(valid.path.values[ix], model, label_index)
     labels = legal_labels
     # labels = next(os.walk(train_data_path))[1]
-    confusion = confusion_matrix(y_true, y_pred, labels)
+    confusion = confusion_matrix(y_true[ix], y_pred, labels)
     confusion_df = pd.DataFrame(confusion, index=labels, columns=labels)
     plt.figure(figsize=(10, 7))
     sn.heatmap(confusion_df, annot=True, fmt="d")
@@ -111,9 +115,11 @@ def train_model():
     rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
-    # model = load_model('model.model')
+    # model = load_model('model3.model')
+    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+
     # model = get_some_model(classes=12)
-    model = get_model_simple(label_index, classes=12)
+    # model = get_model_simple(label_index, classes=12)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)
@@ -121,15 +127,16 @@ def train_model():
     # model.load_weights('model2.model')
     # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
-    train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, batch_size=BATCH_SIZE)
+    unknown_y = label_index == ['unknown']
+    train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,
         steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks(label_index, 'model2'),
+        callbacks=get_callbacks(label_index, 'model3'),
         workers=4,
         use_multiprocessing=False,
         verbose=1
@@ -137,11 +144,12 @@ def train_model():
 
 def make_predictions():
     _, _, _, _, label_index, _, _ = get_data()
-    model = get_model_simple(classes=12)
-    model.load_weights('model.model')
+    # model = get_model_simple(label_index, classes=12)
+    # model.load_weights('model3.model')
+    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
-    fpaths = glob(os.path.join(test_data_path, '*wav'))
-    fpaths = np.random.choice(fpaths, 5000)
+    fpaths = glob(os.path.join(os.path.join(train_data_path, 'go'), '*wav'))
+    fpaths = np.random.choice(fpaths, 1000)
     # fpaths = glob(os.path.join(test_data_path, 'clip_2e4ba4c25.wav'))
     index, results = get_predicts(fpaths, model, label_index)
 
@@ -153,10 +161,9 @@ def make_predictions():
 def validate_predictions():
     _, _, _, _, label_index, _, _ = get_data()
     # model = load_model('model2.model')
-    model = get_model_simple(classes=12)
-    model.load_weights('model.model')
-
-    validate(test_internal_data_path, model, label_index)
+    model = get_model_simple(label_index, classes=12)
+    model.load_weights('model2.model')
+    validate(train_data_path, model, label_index)
 #
 # def get_emb(bottleneck, fpaths):
 #     results = []

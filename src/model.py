@@ -28,6 +28,13 @@ def get_callbacks(label_index, model_name='model'):
     early_stopping = EarlyStopping(monitor='val_custom_accuracy_in', patience=5, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_custom_accuracy_in', factor=0.5, patience=0, verbose=1)
     tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
+
+    # model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True,
+    #                                    save_weights_only=False,
+    #                                    verbose=1)
+    # early_stopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1)
+    # reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=0, verbose=1)
+    # tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
     lr_tracker = LearningRateTracker()
     return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]
 
@@ -49,7 +56,7 @@ def get_model_simple(label_index, classes=12):
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
-
+    #
     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
@@ -67,22 +74,26 @@ def get_model_simple(label_index, classes=12):
 
     x = GlobalAveragePooling2D()(x)
 
-    x = Dense(256)(x)
-    x = Activation('relu')(x)
+    # x = Dense(256)(x)
+    # x = Activation('relu')(x)
 
 
-    if classes == 2:
-        # loss = losses.binary_crossentropy
-        x = Dense(classes, activation='sigmoid')(x)
-    else:
-        # loss = losses.categorical_crossentropy
-        # loss = custom_categorical_crossentropy
-        # x = Dense(classes, activation='softmax')(x)
-        x = Dense(classes, activation='sigmoid')(x)
+    # if classes == 2:
+    #     # loss = losses.binary_crossentropy
+    #     x = Dense(classes, activation='sigmoid')(x)
+    # else:
+    #     # loss = losses.categorical_crossentropy
+    #     # loss = custom_categorical_crossentropy
+    #     x = Dense(classes, activation='softmax')(x)
+    #     # x = Dense(classes, activation='sigmoid')(x)
+    # x = Dense(classes, activation='softmax')(x)
+    x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
     # opt = optimizers.Adam(lr=0.0005)
+    # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+    # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
     model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
     print(model.metrics_names)
     return model
@@ -92,23 +103,20 @@ def custom_loss(label_index):
         z = np.zeros(len(label_index), dtype=bool)
         z[label_index == ['unknown']] = True
         var = K.constant(np.array(z), dtype='float32')
-        y_pred = K.print_tensor(y_pred)
+        # y_pred = K.print_tensor(y_pred)
 
 
         y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred * var, y_pred)
 
-        # return K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), K.binary_crossentropy(y_true, var), K.binary_crossentropy(y_true, y_pred))
-        #
-
-
-        # # y_pred = K.greater_equal(y_pred, mmax)
-        return hinge(y_true, y_pred)
+        # return K.categorical_crossentropy(y_true, y_pred)
+        return K.categorical_crossentropy(y_true, y_pred)
 
     return custom_loss_in
 
-def hinge(y_true, y_pred):
-    return K.mean(K.maximum(1. - y_true * y_pred, 0.), axis=-1)
-
+def categorical_hinge(y_true, y_pred):
+    pos = K.sum(y_true * y_pred, axis=-1)
+    neg = K.max((1. - y_true) * y_pred, axis=-1)
+    return K.maximum(0., neg - pos + 1.)
 
 def custom_accuracy(label_index):
     def custom_accuracy_in(y_true, y_pred):
@@ -116,7 +124,7 @@ def custom_accuracy(label_index):
         z[label_index == ['unknown']] = True
         var = K.constant(np.array(z), dtype='float32')
 
-        y_pred = K.print_tensor(y_pred)
+        # y_pred = K.print_tensor(y_pred)
 
 
         y_pred2 = y_pred * var

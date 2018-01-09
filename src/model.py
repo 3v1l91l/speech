@@ -52,25 +52,25 @@ def get_model_simple(label_index, classes=12):
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+    # #
+    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
     #
-    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
+    #
+    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    # x = Activation('relu')(x)
+    # x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
 
     x = GlobalAveragePooling2D()(x)
 
@@ -90,8 +90,8 @@ def get_model_simple(label_index, classes=12):
     x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
-    opt = optimizers.Adam(lr=0.0012)
-    # opt = optimizers.Adam(lr=0.0005)
+    # opt = optimizers.Adam(lr=0.0012)
+    opt = optimizers.Adam(lr=0.005)
     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
     # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
     model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
@@ -100,39 +100,45 @@ def get_model_simple(label_index, classes=12):
 
 def custom_loss(label_index):
     def custom_loss_in(y_true,y_pred):
-        z = np.zeros(len(label_index), dtype=bool)
-        z[label_index == ['unknown']] = True
-        var = K.constant(np.array(z), dtype='float32')
-        # y_pred = K.print_tensor(y_pred)
+        # z = np.zeros(len(label_index), dtype=bool)
+        # z[label_index == ['unknown']] = True
+        # var = K.constant(np.array(z), dtype='float32')
+        # y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred * var, y_pred)
 
-
-        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred * var, y_pred)
-
-        return K.binary_crossentropy(y_true, y_pred)
+        return K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)
+        # return K.categorical_crossentropy(y_true, y_pred)
         # return categorical_hinge(y_true, y_pred)
 
     return custom_loss_in
+def squared_hinge(y_true, y_pred):
+    return K.mean(K.square(K.maximum(1. - y_true * y_pred, 0.)), axis=-1)
 
 def categorical_hinge(y_true, y_pred):
     pos = K.sum(y_true * y_pred, axis=-1)
     neg = K.max((1. - y_true) * y_pred, axis=-1)
     return K.maximum(0., neg - pos + 1.)
 
+# def custom_accuracy(label_index):
+#     def custom_accuracy_in(y_true, y_pred):
+#         z = np.zeros(len(label_index), dtype=bool)
+#         z[label_index == ['unknown']] = True
+#         var = K.constant(np.array(z), dtype='float32')
+#         y_pred2 = y_pred * var
+#         y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred2, y_pred)
+#
+#         return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
+#     return custom_accuracy_in
+
 def custom_accuracy(label_index):
     def custom_accuracy_in(y_true, y_pred):
-        z = np.zeros(len(label_index), dtype=bool)
-        z[label_index == ['unknown']] = True
-        var = K.constant(np.array(z), dtype='float32')
+        # z = np.zeros(len(label_index), dtype=bool)
+        # z[label_index == ['unknown']] = True
+        # var = K.constant(np.array(z), dtype='float32')
+        # y_pred2 = y_pred * var
+        # y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred2, y_pred)
 
-        # y_pred = K.print_tensor(y_pred)
-
-
-        y_pred2 = y_pred * var
-        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred2, y_pred)
-
-        return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
+        return K.mean(K.equal(y_true, K.round(y_pred)), axis=-1)
     return custom_accuracy_in
-
 
 def get_model(label_index, classes=12):
     weight_decay = 1e-4

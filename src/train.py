@@ -84,15 +84,18 @@ def get_train_valid_df():
     valid = prepare_data(get_path_label_df(valid_data_path))
     return train, valid
 
-def get_data():
+def get_data(binary_label):
     train, valid = get_train_valid_df()
     silence_paths = train.path[train.word == 'silence']
-    # unknown_paths = train.path[train.word == 'unknown']
-    unknown_paths = train.path[~train.word.isin(legal_labels_without_unknown)]
-    # train.drop(train[train.word.isin(['silence'])].index, inplace=True)
-    # valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
-    # train.reset_index(inplace=True)
-    # valid.reset_index(inplace=True)
+    unknown_paths = train.path[train.word == 'unknown']
+    if binary_label != 'silence':
+        train.drop(train[train.word.isin(['silence'])].index, inplace=True)
+        valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
+        train.reset_index(inplace=True)
+        valid.reset_index(inplace=True)
+
+    train.loc[train.word != binary_label, 'word'] = 'unknown'
+    valid.loc[valid.word != binary_label, 'word'] = 'unknown'
 
     len_train = len(train.word.values)
     temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
@@ -107,8 +110,8 @@ def get_data():
 
 
 
-def train_model():
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data()
+def train_model(binary_label):
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data(binary_label)
 
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
@@ -116,10 +119,10 @@ def train_model():
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     # model = load_model('model3.model')
-    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+    # model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
     # model = get_some_model(classes=12)
-    # model = get_model_simple(label_index, classes=12)
+    model = get_model_simple(label_index, classes=2)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)
@@ -128,15 +131,15 @@ def train_model():
     # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     unknown_y = label_index == ['unknown']
-    train_gen = batch_generator_paths_old(False, train.path.values, y_train, train.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_paths_old(True, valid.path.values, y_valid, valid.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
+    train_gen = batch_generator_binary(False, binary_label, train.path.values, y_train, train.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_binary(True, binary_label, valid.path.values, y_valid, valid.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,
         steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks(label_index, 'model3'),
+        callbacks=get_callbacks(label_index, binary_label),
         workers=4,
         use_multiprocessing=False,
         verbose=1
@@ -272,7 +275,7 @@ def validate_predictions():
 
 def main():
     # train_silence_model()
-    train_model()
+    train_model('down')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions()

@@ -40,8 +40,8 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         silence_prop = 0.15
         unknown_flip_known_prop = 0
         if validate:
-            unknown_flip_known_prop = 0.35
-            unknown_prop = 0.05
+            unknown_flip_known_prop = 0.2
+            unknown_prop = 0.15
         batch_size_unknown_flip_known = math.ceil(unknown_flip_known_prop * batch_size)
         batch_size_unknown = math.ceil(unknown_prop * batch_size)
         batch_size_silence = math.ceil(silence_prop * batch_size)
@@ -64,6 +64,29 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         res_labels = np.concatenate(([unknown_y]*len(all_unknown_ix),y[silence_ix],y[known_ix]))
         yield np.stack(specgrams), res_labels
 
+@threadsafe_generator
+def batch_generator_binary(validate, binary_label, X_paths, y, y_label, silences, unknowns, unknown_y, batch_size=16):
+    while True:
+        # Try to represent classes distribution
+        unknown_prop = 0.5
+        unknown_flip_known_prop = 0
+        if validate:
+            unknown_flip_known_prop = 0.3
+            unknown_prop = 0.2
+        batch_size_unknown_flip_known = math.ceil(unknown_flip_known_prop * batch_size)
+        batch_size_unknown = math.ceil(unknown_prop * batch_size)
+        batch_size_known = batch_size - batch_size_unknown - batch_size_unknown_flip_known
+        unknown_ix = np.random.choice(y_label[y_label != binary_label].index, size=batch_size_unknown)
+        unknown_flip_known_ix = np.random.choice(y_label[y_label.isin(legal_labels_without_unknown_can_be_flipped)].index, size=batch_size_unknown_flip_known)
+        known_ix = np.random.choice(y_label[y_label == binary_label].index, size=batch_size_known)
+        all_unknown_ix = np.concatenate((unknown_ix,unknown_flip_known_ix))
+        X = list(map(load_wav_by_path, np.concatenate((X_paths[all_unknown_ix],X_paths[known_ix]))))
+
+        specgrams = []
+        specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
+        specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix):], silences))
+        res_labels = np.concatenate(([unknown_y]*len(all_unknown_ix),y[known_ix]))
+        yield np.stack(specgrams), res_labels
 
 def get_triplet_batch(tpe_pred, X, y, y_label, batch_size=128):
     set_labels = np.array(list(set(y_label)))

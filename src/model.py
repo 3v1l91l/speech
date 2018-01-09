@@ -109,7 +109,7 @@ def custom_loss(label_index):
         y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.8), dtype='float32')), y_pred * var, y_pred)
 
         # return K.categorical_crossentropy(y_true, y_pred)
-        return K.categorical_crossentropy(y_true, y_pred)
+        return categorical_hinge(y_true, y_pred)
 
     return custom_loss_in
 

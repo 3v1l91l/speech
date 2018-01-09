@@ -116,10 +116,10 @@ def train_model():
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     # model = load_model('model3.model')
-    # model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
     # model = get_some_model(classes=12)
-    model = get_model_simple(label_index, classes=12)
+    # model = get_model_simple(label_index, classes=12)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)
@@ -148,7 +148,7 @@ def make_predictions():
     # model.load_weights('model3.model')
     model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
-    fpaths = glob(os.path.join(os.path.join(train_data_path, 'go'), '*wav'))
+    fpaths = glob(os.path.join(test_data_path, '*wav'))
     fpaths = np.random.choice(fpaths, 1000)
     # fpaths = glob(os.path.join(test_data_path, 'clip_2e4ba4c25.wav'))
     index, results = get_predicts(fpaths, model, label_index)
@@ -161,9 +161,10 @@ def make_predictions():
 def validate_predictions():
     _, _, _, _, label_index, _, _ = get_data()
     # model = load_model('model2.model')
-    model = get_model_simple(label_index, classes=12)
-    model.load_weights('model2.model')
-    validate(train_data_path, model, label_index)
+    # model = get_model_simple(label_index, classes=12)
+    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+
+    validate(test_internal_data_path, model, label_index)
 #
 # def get_emb(bottleneck, fpaths):
 #     results = []

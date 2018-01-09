@@ -90,7 +90,7 @@ def get_model_simple(label_index, classes=12):
     x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
-    opt = optimizers.Adam(lr=0.005)
+    opt = optimizers.Adam(lr=0.0012)
     # opt = optimizers.Adam(lr=0.0005)
     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
     # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])

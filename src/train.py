@@ -116,10 +116,10 @@ def train_model():
     unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
 
     # model = load_model('model3.model')
-    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+    # model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
     # model = get_some_model(classes=12)
-    # model = get_model_simple(label_index, classes=12)
+    model = get_model_simple(label_index, classes=12)
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
     # model = get_some_model(classes=30)

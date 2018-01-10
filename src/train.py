@@ -15,12 +15,9 @@ import scipy.io.wavfile as wavfile
 # import cProfile
 import math
 from generator import *
-# import lightgbm as lgb
 from sklearn.metrics import confusion_matrix
 from model import *
-import seaborn as sn
 from keras.models import Model
-# import lightgbm as lgb
 from sklearn.model_selection import StratifiedKFold
 from bottleneck import Bottleneck
 # from identification import get_scores, calc_metrics

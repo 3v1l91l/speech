@@ -66,17 +66,18 @@ def validate(path, models):
     valid = prepare_data(get_path_label_df(path))
     # valid.loc[valid.word != binary_label, 'word'] = 'unknown'
     y_true = np.array(valid.word.values)
-    ix = np.random.choice(range(len(y_true)), 1500)
+    # ix = np.random.choice(range(len(y_true)), 1500)
 
-    _, y_pred = get_predicts(valid.path.values[ix], models)
+    _, y_pred = get_predicts(valid.path.values, models)
     # labels = next(os.walk(train_data_path))[1]
     # keys = list(models.keys())
     # keys.extend(['unknown'])
-    confusion = confusion_matrix(y_true[ix], y_pred, legal_labels)
+    confusion = confusion_matrix(y_true, y_pred, legal_labels)
     confusion_df = pd.DataFrame(confusion, index=legal_labels, columns=legal_labels)
     plt.figure(figsize=(10, 7))
-    sn.heatmap(confusion_df, annot=True, fmt="d")
-    plt.show()
+    svm = sn.heatmap(confusion_df, annot=True, fmt="d")
+    figure = svm.get_figure()
+    figure.savefig('svm_conf.png', dpi=400)
 
 def get_train_valid_df():
     train = prepare_data(get_path_label_df(train_data_path))
@@ -195,8 +196,8 @@ def main():
     # train_model('no')
     # train_tpe()
     # train_model_unknown()
-    # validate_predictions()
-    make_predictions()
+    validate_predictions()
+    # make_predictions()
 
 if __name__ == "__main__":
     main()

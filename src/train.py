@@ -93,8 +93,8 @@ def get_data(binary_label):
         train.reset_index(inplace=True)
         valid.reset_index(inplace=True)
 
-    original_labels_train = train.word.values
-    original_labels_valid = valid.word.values
+    original_labels_train = np.array(train.word.values)
+    original_labels_valid = np.array(valid.word.values)
     train.loc[train.word != binary_label, 'word'] = 'unknown'
     valid.loc[valid.word != binary_label, 'word'] = 'unknown'
 
@@ -149,8 +149,8 @@ def train_model(binary_label):
                                        unknown_y, original_labels_valid, valid_possible_unknown_ix, valid_possible_can_be_flipped_ix, valid_possible_known_ix, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
-        epochs=100,
-        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
+        epochs=1,
+        steps_per_epoch=len(y_train) // BATCH_SIZE // 200,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
         callbacks=get_callbacks(label_index, binary_label),
@@ -292,6 +292,7 @@ def main():
     # train_silence_model()
     for label in legal_labels_without_unknown:
         train_model(label)
+    # train_model('no')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions('down')

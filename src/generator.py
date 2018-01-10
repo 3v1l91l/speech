@@ -78,6 +78,11 @@ def batch_generator_binary(validate, binary_label, X_paths, y, y_label, silences
         batch_size_known = batch_size - batch_size_unknown - batch_size_unknown_flip_known
         unknown_ix = np.random.choice(possible_unknown_ix, size=batch_size_unknown)
         unknown_flip_known_ix = np.random.choice(possible_can_be_flipped_ix, size=batch_size_unknown_flip_known)
+        # if validate:
+        #     print('validate: ' + str(len(unknown_flip_known_ix)))
+        # else:
+        #     print('train: ' + str(len(unknown_flip_known_ix)))
+
         known_ix = np.random.choice(possible_known_ix, size=batch_size_known)
         all_unknown_ix = np.concatenate((unknown_ix,unknown_flip_known_ix))
         X = list(map(load_wav_by_path, np.concatenate((X_paths[all_unknown_ix],X_paths[known_ix]))))

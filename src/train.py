@@ -12,7 +12,7 @@ import time
 import random
 from lib import *
 import scipy.io.wavfile as wavfile
-import cProfile
+# import cProfile
 import math
 from generator import *
 # import lightgbm as lgb
@@ -20,7 +20,7 @@ from sklearn.metrics import confusion_matrix
 from model import *
 import seaborn as sn
 from keras.models import Model
-import lightgbm as lgb
+# import lightgbm as lgb
 from sklearn.model_selection import StratifiedKFold
 from bottleneck import Bottleneck
 # from identification import get_scores, calc_metrics
@@ -95,7 +95,7 @@ def get_data(binary_label):
         valid.reset_index(inplace=True)
 
     original_labels_train = train.word.values
-    original_labels_valid = train.word.values
+    original_labels_valid = valid.word.values
     train.loc[train.word != binary_label, 'word'] = 'unknown'
     valid.loc[valid.word != binary_label, 'word'] = 'unknown'
 
@@ -143,7 +143,7 @@ def train_model(binary_label):
     model.fit_generator(
         generator=train_gen,
         epochs=100,
-        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
+        steps_per_epoch=len(y_train) // BATCH_SIZE // 120,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
         callbacks=get_callbacks(label_index, binary_label),

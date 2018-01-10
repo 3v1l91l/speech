@@ -28,6 +28,8 @@ legal_labels = 'yes no up down left right on off stop go silence unknown'.split(
 legal_labels_without_silence = 'yes no up down left right on off stop go unknown'.split()
 legal_labels_without_unknown = 'yes no up down left right on off stop go silence'.split()
 recognized_labels = 'yes no up down left right on off stop go'.split()
+legal_labels_without_unknown_and_silence = 'yes no up down left right on off stop go'.split()
+legal_labels_without_unknown_can_be_flipped = [x for x in legal_labels_without_unknown_and_silence if x[::-1] not in legal_labels_without_unknown_and_silence]
 root_path = r'..'
 out_path = r'.'
 model_path = r'.'
@@ -135,8 +137,16 @@ def train_model(binary_label):
     # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     unknown_y = label_index == ['unknown']
-    train_gen = batch_generator_binary(False, binary_label, train.path.values, y_train, train.word, silences, unknowns, unknown_y, original_labels_train, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_binary(True, binary_label, valid.path.values, y_valid, valid.word, silences, unknowns, unknown_y, original_labels_valid, batch_size=BATCH_SIZE)
+    train_possible_unknown_ix = train.word[train.word != binary_label].index
+    valid_possible_unknown_ix = valid.word[valid.word != binary_label].index
+    train_possible_can_be_flipped_ix = train.word[np.isin(original_labels_train, legal_labels_without_unknown_can_be_flipped)].index
+    valid_possible_can_be_flipped_ix = valid.word[np.isin(original_labels_valid, legal_labels_without_unknown_can_be_flipped)].index
+    train_possible_known_ix = train.word[train.word == binary_label].index
+    valid_possible_known_ix = valid.word[valid.word == binary_label].index
+    train_gen = batch_generator_binary(False, binary_label, train.path.values, y_train, train.word, silences, unknowns,
+                                       unknown_y, original_labels_train, train_possible_unknown_ix, train_possible_can_be_flipped_ix, train_possible_known_ix, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_binary(True, binary_label, valid.path.values, y_valid, valid.word, silences, unknowns,
+                                       unknown_y, original_labels_valid, valid_possible_unknown_ix, valid_possible_can_be_flipped_ix, valid_possible_known_ix, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,

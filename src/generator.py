@@ -105,6 +105,7 @@ def get_triplet_batch(tpe_pred, X, y, y_label, batch_size=128):
     negative_samples = tpe_pred.predict(X[negative_ix])
     return positive_samples, anchor_samples, negative_samples
 
+@threadsafe_generator
 def test_data_generator(fpaths, batch=16):
     i = 0
     for path in fpaths:
@@ -127,6 +128,7 @@ def test_data_generator(fpaths, batch=16):
         yield fnames, imgs
     raise StopIteration()
 
+@threadsafe_generator
 def valid_data_generator(fpaths, batch=16):
     imgs = []
     fnames = []

@@ -17,7 +17,9 @@ import math
 from generator import *
 from sklearn.metrics import confusion_matrix
 from model import *
-from keras.models import Model
+import seaborn as sn
+import matplotlib.pyplot as plt
+from keras.models import Model, clone_model
 from sklearn.model_selection import StratifiedKFold
 from bottleneck import Bottleneck
 # from identification import get_scores, calc_metrics
@@ -40,40 +42,38 @@ test_data_path = os.path.join(root_path, 'input', 'test', 'audio')
 background_noise_paths = glob(os.path.join(train_data_path, r'_background_noise_/*' + '.wav'))
 silence_paths = glob(os.path.join(train_data_path, r'silence/*' + '.wav'))
 BATCH_SIZE = 128
+import multiprocessing
 
-def get_predicts(fpaths, model, label_index):
+
+def get_predicts(fpaths, models):
     # fpaths = np.random.choice(fpaths, 1000)
     # label_index[~np.isin(label_index, legal_labels)] = 'unknown'
     index = []
     results = []
-    batch = 128
+    batch = 64
+    label_index = np.array(list(models.keys()))
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
-        predicted_probabilities = model.predict(imgs)
-        # print(len(predicted_probabilities))
-        predicts = []
-        for i in range(len(fnames)):
-            print(np.max(predicted_probabilities[i]))
-            if(np.max(predicted_probabilities[i]) > 0.95):
-                # print(np.max(predicted_probabilities[i]))
-                predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
-            else:
-                predicts.extend(['unknown'])
-            # predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
-
+        predictions = [model.predict(imgs) for (label,model) in models.items()]
+        predictions = np.array([[p[0] for p in p]for p in predictions]).swapaxes(0, 1)
+        prediction_labels = np.array(['unknown']*len(fnames))
+        high_prob_lx = np.max(predictions, axis=1) > 0.9
+        prediction_labels[high_prob_lx] = label_index[np.argmax(predictions[high_prob_lx], axis=1)]
         index.extend(fnames)
-        results.extend(predicts)
+        results.extend(list(prediction_labels))
     return index, results
 
-def validate(binary_label, path, model, label_index):
+def validate(path, models):
     valid = prepare_data(get_path_label_df(path))
-    valid.loc[valid.word != binary_label, 'word'] = 'unknown'
+    # valid.loc[valid.word != binary_label, 'word'] = 'unknown'
     y_true = np.array(valid.word.values)
-    ix = np.random.choice(range(len(y_true)), 15000)
+    ix = np.random.choice(range(len(y_true)), 500)
 
-    _, y_pred = get_predicts(valid.path.values[ix], model, label_index)
+    _, y_pred = get_predicts(valid.path.values[ix], models)
     # labels = next(os.walk(train_data_path))[1]
-    confusion = confusion_matrix(y_true[ix], y_pred, label_index)
-    confusion_df = pd.DataFrame(confusion, index=label_index, columns=label_index)
+    # keys = list(models.keys())
+    # keys.extend(['unknown'])
+    confusion = confusion_matrix(y_true[ix], y_pred, legal_labels)
+    confusion_df = pd.DataFrame(confusion, index=legal_labels, columns=legal_labels)
     plt.figure(figsize=(10, 7))
     sn.heatmap(confusion_df, annot=True, fmt="d")
     plt.show()
@@ -160,143 +160,43 @@ def train_model(binary_label):
     )
 
 def make_predictions():
-    _, _, _, _, label_index, _, _ = get_data()
-    # model = get_model_simple(label_index, classes=12)
-    # model.load_weights('model3.model')
-    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
-
+    models = dict()
+    model_empty = get_model_simple([], classes=2)
+    for label in legal_labels_without_unknown:
+        print(label)
+        model = clone_model(model_empty)
+        model.load_weights(label + '.model')
+        models[label] = model
+        
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    fpaths = np.random.choice(fpaths, 1000)
-    # fpaths = glob(os.path.join(test_data_path, 'clip_2e4ba4c25.wav'))
-    index, results = get_predicts(fpaths, model, label_index)
+    # fpaths = np.random.choice(fpaths, 100)
+    index, results = get_predicts(fpaths, models)
 
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
     df['label'] = results
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
-def validate_predictions(binary_label):
-    # _, _, _, _, label_index, _, _ = get_data(binary_label)
-    # model = load_model('model2.model')
-    # model = get_model_simple(label_index, classes=12)
-    model = load_model(binary_label+'.model')#, custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
-    # model = get_model_simple(label_index, classes=12)
-
-    validate(binary_label, test_internal_data_path, model, label_index)
-#
-# def get_emb(bottleneck, fpaths):
-#     results = []
-#     batch = 128
-#     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
-#         predicts = bottleneck.predict(imgs)
-#         results.extend(predicts)
-#     return results
-#
-# def train_tpe():
-#     n_in = 256
-#     n_out = 256
-#
-#     model = get_model_simple(31)
-#     model.load_weights('model.model')
-#     bottleneck = Bottleneck(model, ~1)
-#     train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data()
-#     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
-#     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
-#
-#     # train_emb = bottleneck.predict(train.path.values, batch_size=256)
-#     # np.save('train_emb', train_emb)
-#     train_emb = np.load('train_emb.npy')
-#     # dev_emb = bottleneck.predict(valid.path.values, batch_size=256)
-#     # np.save('dev_emb', dev_emb)
-#     dev_emb = np.load('dev_emb.npy')
-#
-#
-#     pca = PCA(n_out)
-#     pca.fit(train_emb)
-#     W_pca = pca.components_
-#     tpe, tpe_pred = build_tpe(n_in, n_out, W_pca.T)
-#     # tpe.load_weights('mineer.h5')
-#
-#     NB_EPOCH = 500000
-#     COLD_START = NB_EPOCH
-#     BATCH_SIZE = 4
-#     BIG_BATCH_SIZE = 1000
-#
-#     z = np.zeros((BIG_BATCH_SIZE,))
-#
-#     dev_protocol = np.zeros((len(valid.word.values), len(valid.word.values)), dtype=np.bool)
-#     for word in list(set(valid.word.values)):
-#         word_true = valid.word.values == word
-#         dev_protocol[np.outer(word_true, word_true)] = True
-#
-#     test(tpe_pred, dev_emb, dev_protocol)
-#     # mineer = float('inf')
-#     # for e in range(NB_EPOCH):
-#     #     print('epoch: {}'.format(e))
-#     #     a, p, n = get_triplet_batch(tpe_pred, train_emb, y_train, train.word, batch_size=BIG_BATCH_SIZE)
-#     #     tpe.fit([a, p, n], z, batch_size=BATCH_SIZE, epochs=1)
-#     #     if e !=0 and e%50 == 0:
-#     #         eer = test(tpe_pred, dev_emb, dev_protocol)
-#     #         print('EER: {:.2f}'.format(eer * 100))
-#     #         if eer < mineer:
-#     #             mineer = eer
-#     #             tpe.save_weights('mineer.h5')
-#
-# def test(tpe_pred, dev_emb, dev_protocol):
-#     dev_emb2 = tpe_pred.predict(dev_emb)
-#     tsc, isc = get_scores(dev_emb2, dev_protocol)
-#     eer, _, _, _ = calc_metrics(tsc, isc)
-#     return eer
-#
-#
-# def get_scores(data_y, protocol):
-#     data_y = data_y / np.linalg.norm(data_y, axis=1)[:, np.newaxis]
-#     scores = data_y @ data_y.T
-#
-#     return scores[protocol], scores[np.logical_not(protocol)]
-#
-#
-# def calc_metrics(targets_scores, imposter_scores):
-#     min_score = np.minimum(np.min(targets_scores), np.min(imposter_scores))
-#     max_score = np.maximum(np.max(targets_scores), np.max(imposter_scores))
-#
-#     n_tars = len(targets_scores)
-#     n_imps = len(imposter_scores)
-#
-#     N = 100
-#
-#     fars = np.zeros((N,))
-#     frrs = np.zeros((N,))
-#     dists = np.zeros((N,))
-#
-#     min_gap = float('inf')
-#     eer = 0
-#
-#     for i, dist in enumerate(np.linspace(min_score, max_score, N)):
-#         far = len(np.where(imposter_scores > dist)[0]) / n_imps
-#         frr = len(np.where(targets_scores < dist)[0]) / n_tars
-#         fars[i] = far
-#         frrs[i] = frr
-#         dists[i] = dist
-#
-#         gap = np.abs(far - frr)
-#
-#         if gap < min_gap:
-#             min_gap = gap
-#             eer = (far + frr) / 2
-#
-#     return eer, fars, frrs, dists
-
+def validate_predictions():
+    models = dict()
+    model_empty = get_model_simple([], classes=2)
+    for label in legal_labels_without_unknown:
+        print(label)
+        model = clone_model(model_empty)
+        model.load_weights(label + '.model')
+        models[label] = model
+    # models = {label: load_model(label + '.model') for label in legal_labels_without_unknown}
+    validate(test_internal_data_path, models)
 
 def main():
     # train_silence_model()
-    for label in 'on off stop go silence'.split():
-        train_model(label)
+    # for label in 'on off stop go silence'.split():
+    #     train_model(label)
     # train_model('no')
     # train_tpe()
     # train_model_unknown()
-    validate_predictions()
-    # make_predictions()
+    # validate_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

@@ -50,7 +50,7 @@ def get_predicts(fpaths, models):
     # label_index[~np.isin(label_index, legal_labels)] = 'unknown'
     index = []
     results = []
-    batch = 64
+    batch = 128
     label_index = np.array(list(models.keys()))
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
         predictions = [model.predict(imgs) for (label,model) in models.items()]
@@ -66,7 +66,7 @@ def validate(path, models):
     valid = prepare_data(get_path_label_df(path))
     # valid.loc[valid.word != binary_label, 'word'] = 'unknown'
     y_true = np.array(valid.word.values)
-    ix = np.random.choice(range(len(y_true)), 500)
+    ix = np.random.choice(range(len(y_true)), 1500)
 
     _, y_pred = get_predicts(valid.path.values[ix], models)
     # labels = next(os.walk(train_data_path))[1]
@@ -169,7 +169,7 @@ def make_predictions():
         models[label] = model
         
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    # fpaths = np.random.choice(fpaths, 100)
+    fpaths = np.random.choice(fpaths, 500)
     index, results = get_predicts(fpaths, models)
 
     df = pd.DataFrame(columns=['fname', 'label'])

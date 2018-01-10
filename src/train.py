@@ -176,7 +176,7 @@ def make_predictions():
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 def validate_predictions(binary_label):
-    _, _, _, _, label_index, _, _ = get_data(binary_label)
+    # _, _, _, _, label_index, _, _ = get_data(binary_label)
     # model = load_model('model2.model')
     # model = get_model_simple(label_index, classes=12)
     model = load_model(binary_label+'.model')#, custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
@@ -290,12 +290,12 @@ def validate_predictions(binary_label):
 
 def main():
     # train_silence_model()
-    for label in legal_labels_without_unknown:
+    for label in 'on off stop go silence'.split():
         train_model(label)
     # train_model('no')
     # train_tpe()
     # train_model_unknown()
-    # validate_predictions('down')
+    validate_predictions()
     # make_predictions()
 
 if __name__ == "__main__":

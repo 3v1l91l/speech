@@ -65,7 +65,7 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         yield np.stack(specgrams), res_labels
 
 @threadsafe_generator
-def batch_generator_binary(validate, binary_label, X_paths, y, y_label, silences, unknowns, unknown_y, batch_size=16):
+def batch_generator_binary(validate, binary_label, X_paths, y, y_label, silences, unknowns, unknown_y, original_labels, batch_size=16):
     while True:
         # Try to represent classes distribution
         unknown_prop = 0.5
@@ -77,7 +77,7 @@ def batch_generator_binary(validate, binary_label, X_paths, y, y_label, silences
         batch_size_unknown = math.ceil(unknown_prop * batch_size)
         batch_size_known = batch_size - batch_size_unknown - batch_size_unknown_flip_known
         unknown_ix = np.random.choice(y_label[y_label != binary_label].index, size=batch_size_unknown)
-        unknown_flip_known_ix = np.random.choice(y_label[y_label.isin(legal_labels_without_unknown_can_be_flipped)].index, size=batch_size_unknown_flip_known)
+        unknown_flip_known_ix = np.random.choice(y_label[np.isin(original_labels, legal_labels_without_unknown_can_be_flipped)].index, size=batch_size_unknown_flip_known)
         known_ix = np.random.choice(y_label[y_label == binary_label].index, size=batch_size_known)
         all_unknown_ix = np.concatenate((unknown_ix,unknown_flip_known_ix))
         X = list(map(load_wav_by_path, np.concatenate((X_paths[all_unknown_ix],X_paths[known_ix]))))

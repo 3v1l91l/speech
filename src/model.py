@@ -23,18 +23,18 @@ class LearningRateTracker(Callback):
         print("Learning rate: {}".format(K.eval(lr_with_decay)))
 
 def get_callbacks(label_index, model_name='model'):
-    model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_custom_accuracy_in', save_best_only=True, save_weights_only=False,
-                                       verbose=1)
-    early_stopping = EarlyStopping(monitor='val_custom_accuracy_in', patience=5, verbose=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_custom_accuracy_in', factor=0.5, patience=0, verbose=1)
-    tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
-
-    # model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True,
-    #                                    save_weights_only=False,
+    # model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_custom_accuracy_in', save_best_only=True, save_weights_only=False,
     #                                    verbose=1)
-    # early_stopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1)
-    # reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=0, verbose=1)
+    # early_stopping = EarlyStopping(monitor='val_custom_accuracy_in', patience=5, verbose=1)
+    # reduce_lr = ReduceLROnPlateau(monitor='val_custom_accuracy_in', factor=0.5, patience=0, verbose=1)
     # tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
+
+    model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True,
+                                       save_weights_only=False,
+                                       verbose=1)
+    early_stopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=0, verbose=1)
+    tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
     lr_tracker = LearningRateTracker()
     return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]
 
@@ -52,25 +52,25 @@ def get_model_simple(label_index, classes=12):
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)
 
-    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    # x = Activation('relu')(x)
-    # x = BatchNormalization()(x)
-    # x = Dropout(0.25)(x)
-    # #
-    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    # x = Activation('relu')(x)
-    # x = BatchNormalization()(x)
-    # x = Dropout(0.25)(x)
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
     #
-    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    # x = Activation('relu')(x)
-    # x = BatchNormalization()(x)
-    # x = Dropout(0.25)(x)
-    #
-    # x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    # x = Activation('relu')(x)
-    # x = BatchNormalization()(x)
-    # x = Dropout(0.25)(x)
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
+
+    x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+    x = Activation('relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.25)(x)
 
     x = GlobalAveragePooling2D()(x)
 
@@ -94,7 +94,9 @@ def get_model_simple(label_index, classes=12):
     opt = optimizers.Adam(lr=0.005)
     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
     # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
-    model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+    # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+    model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
+
     print(model.metrics_names)
     return model
 

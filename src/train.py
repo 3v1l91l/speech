@@ -53,28 +53,28 @@ def get_predicts(fpaths, model, label_index):
         # print(len(predicted_probabilities))
         predicts = []
         for i in range(len(fnames)):
-            # print(np.max(predicted_probabilities[i]))
-            # if(np.argmax(predicted_probabilities[i]) > 0.5):
-            #     # print(np.max(predicted_probabilities[i]))
-            #     predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
-            # else:
-            #     predicts.extend(['unknown'])
-            predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
+            print(np.max(predicted_probabilities[i]))
+            if(np.max(predicted_probabilities[i]) > 0.95):
+                # print(np.max(predicted_probabilities[i]))
+                predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
+            else:
+                predicts.extend(['unknown'])
+            # predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
 
         index.extend(fnames)
         results.extend(predicts)
     return index, results
 
-def validate(path, model, label_index):
+def validate(binary_label, path, model, label_index):
     valid = prepare_data(get_path_label_df(path))
+    valid.loc[valid.word != binary_label, 'word'] = 'unknown'
     y_true = np.array(valid.word.values)
-    ix = np.random.choice(range(len(y_true)), 5000)
+    ix = np.random.choice(range(len(y_true)), 15000)
 
     _, y_pred = get_predicts(valid.path.values[ix], model, label_index)
-    labels = legal_labels
     # labels = next(os.walk(train_data_path))[1]
-    confusion = confusion_matrix(y_true[ix], y_pred, labels)
-    confusion_df = pd.DataFrame(confusion, index=labels, columns=labels)
+    confusion = confusion_matrix(y_true[ix], y_pred, label_index)
+    confusion_df = pd.DataFrame(confusion, index=label_index, columns=label_index)
     plt.figure(figsize=(10, 7))
     sn.heatmap(confusion_df, annot=True, fmt="d")
     plt.show()
@@ -94,24 +94,31 @@ def get_data(binary_label):
         train.reset_index(inplace=True)
         valid.reset_index(inplace=True)
 
+    original_labels_train = train.word.values
+    original_labels_valid = train.word.values
     train.loc[train.word != binary_label, 'word'] = 'unknown'
     valid.loc[valid.word != binary_label, 'word'] = 'unknown'
 
-    len_train = len(train.word.values)
-    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
-    y_train, y_valid = temp[:len_train], temp[len_train:]
+    # len_train = len(train.word.values)
+    # temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
+    # y_train, y_valid = temp[:len_train], temp[len_train:]
 
-    label_index = y_train.columns.values
-    y_train = np.array(y_train.values)
-    y_valid = np.array(y_valid.values)
+    y_train = np.zeros((len(train),2),dtype=np.uint8)
+    y_train[train.word == binary_label,0] = 1
+    y_train[train.word != binary_label, 1] = 1
 
-    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths
+    y_valid = np.zeros((len(valid),2),dtype=np.uint8)
+    y_valid[valid.word == binary_label,0] = 1
+    y_valid[valid.word != binary_label, 1] = 1
 
+    label_index = np.array([binary_label, 'unknown'])
+    # y_train = np.array(y_train.values)
+    # y_valid = np.array(y_valid.values)
 
-
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid
 
 def train_model(binary_label):
-    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths = get_data(binary_label)
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid = get_data(binary_label)
 
     rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
@@ -131,8 +138,8 @@ def train_model(binary_label):
     # train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     # valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
     unknown_y = label_index == ['unknown']
-    train_gen = batch_generator_binary(False, binary_label, train.path.values, y_train, train.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
-    valid_gen = batch_generator_binary(True, binary_label, valid.path.values, y_valid, valid.word, silences, unknowns, unknown_y, batch_size=BATCH_SIZE)
+    train_gen = batch_generator_binary(False, binary_label, train.path.values, y_train, train.word, silences, unknowns, unknown_y, original_labels_train, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator_binary(True, binary_label, valid.path.values, y_valid, valid.word, silences, unknowns, unknown_y, original_labels_valid, batch_size=BATCH_SIZE)
     model.fit_generator(
         generator=train_gen,
         epochs=100,
@@ -161,13 +168,14 @@ def make_predictions():
     df['label'] = results
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
-def validate_predictions():
-    _, _, _, _, label_index, _, _ = get_data()
+def validate_predictions(binary_label):
+    _, _, _, _, label_index, _, _ = get_data(binary_label)
     # model = load_model('model2.model')
     # model = get_model_simple(label_index, classes=12)
-    model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+    model = load_model(binary_label+'.model')#, custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+    # model = get_model_simple(label_index, classes=12)
 
-    validate(test_internal_data_path, model, label_index)
+    validate(binary_label, test_internal_data_path, model, label_index)
 #
 # def get_emb(bottleneck, fpaths):
 #     results = []
@@ -275,10 +283,11 @@ def validate_predictions():
 
 def main():
     # train_silence_model()
-    train_model('down')
+    for label in legal_labels_without_unknown:
+        train_model(label)
     # train_tpe()
     # train_model_unknown()
-    # validate_predictions()
+    # validate_predictions('down')
     # make_predictions()
 
 if __name__ == "__main__":

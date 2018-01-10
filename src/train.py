@@ -144,7 +144,7 @@ def train_model(binary_label):
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
         callbacks=get_callbacks(label_index, binary_label),
-        workers=24,
+        workers=12,
         use_multiprocessing=False,
         verbose=1
     )

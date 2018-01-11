@@ -170,7 +170,7 @@ def make_predictions():
         models[label] = model
         
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    # fpaths = np.random.choice(fpaths, 500)
+    fpaths = np.random.choice(fpaths, 1500)
     index, results = get_predicts(fpaths, models)
 
     df = pd.DataFrame(columns=['fname', 'label'])

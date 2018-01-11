@@ -132,7 +132,7 @@ def train_model(binary_label):
     model = get_model_simple(label_index, classes=2)
     # model = get_model_simple(label_index, classes=2)
 
-    # model.load_weights(binary_label+ '.model')
+    model.load_weights(binary_label+ '.model')
 
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)
@@ -204,10 +204,10 @@ def validate_predictions():
 
 def main():
     # train_silence_model()
-    for label in 'right on off stop go'.split():
-    # for label in 'yes no'.split():
-        train_model(label)
-    # train_model('right')
+    # for label in 'right on off stop go'.split():
+    # # for label in 'yes no'.split():
+    #     train_model(label)
+    train_model('up')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions()

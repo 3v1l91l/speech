@@ -147,20 +147,25 @@ def custom_accuracy(label_index):
 
 def get_model(label_index, classes=12):
     input_shape = (98, 40, 1)
+    dropout = 0.4
     input = Input(shape=input_shape)
     x = Conv2D(32, (3, 3), strides=(2, 2), use_bias=False, name='block1_conv1')(input)
     x = BatchNormalization(name='block1_conv1_bn')(x)
     x = Activation('relu', name='block1_conv1_act')(x)
+    x = Dropout(dropout)(x)
     x = Conv2D(64, (3, 3), use_bias=False, name='block1_conv2')(x)
     x = BatchNormalization(name='block1_conv2_bn')(x)
     x = Activation('relu', name='block1_conv2_act')(x)
+    x = Dropout(dropout)(x)
 
     residual = Conv2D(128, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
     residual = BatchNormalization()(residual)
+    x = Dropout(dropout)(x)
 
     x = SeparableConv2D(128, (3, 3), padding='same', use_bias=False, name='block2_sepconv1')(x)
     x = BatchNormalization(name='block2_sepconv1_bn')(x)
     x = Activation('relu', name='block2_sepconv2_act')(x)
+    x = Dropout(dropout)(x)
     x = SeparableConv2D(128, (3, 3), padding='same', use_bias=False, name='block2_sepconv2')(x)
     x = BatchNormalization(name='block2_sepconv2_bn')(x)
 
@@ -169,26 +174,33 @@ def get_model(label_index, classes=12):
 
     residual = Conv2D(256, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
     residual = BatchNormalization()(residual)
+    x = Dropout(dropout)(x)
 
     x = Activation('relu', name='block3_sepconv1_act')(x)
     x = SeparableConv2D(256, (3, 3), padding='same', use_bias=False, name='block3_sepconv1')(x)
     x = BatchNormalization(name='block3_sepconv1_bn')(x)
     x = Activation('relu', name='block3_sepconv2_act')(x)
+    x = Dropout(dropout)(x)
     x = SeparableConv2D(256, (3, 3), padding='same', use_bias=False, name='block3_sepconv2')(x)
     x = BatchNormalization(name='block3_sepconv2_bn')(x)
+    x = Dropout(dropout)(x)
 
     x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block3_pool')(x)
     x = layers.add([x, residual])
+    x = Dropout(dropout)(x)
 
-    residual = Conv2D(728, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
-    residual = BatchNormalization()(residual)
+    # residual = Conv2D(728, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
+    # residual = BatchNormalization()(residual)
 
-    x = Activation('relu', name='block4_sepconv1_act')(x)
+    # x = Activation('relu', name='block4_sepconv1_act')(x)
     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block4_sepconv1')(x)
     x = BatchNormalization(name='block4_sepconv1_bn')(x)
+    x = Dropout(dropout)(x)
+
     x = Activation('relu', name='block4_sepconv2_act')(x)
     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block4_sepconv2')(x)
     x = BatchNormalization(name='block4_sepconv2_bn')(x)
+    x = Dropout(dropout)(x)
 
     # x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block4_pool')(x)
     # x = layers.add([x, residual])

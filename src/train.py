@@ -129,8 +129,8 @@ def train_model(binary_label):
     # model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
     # model = get_some_model(classes=12)
-    # model = get_model(label_index, classes=2)
-    model = get_model_simple(label_index, classes=2)
+    model = get_model(label_index, classes=2)
+    # model = get_model_simple(label_index, classes=2)
 
     # model.load_weights(binary_label+ '.model')
 

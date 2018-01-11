@@ -147,7 +147,7 @@ def custom_accuracy(label_index):
 
 def get_model(label_index, classes=12):
     input_shape = (98, 40, 1)
-    weight_decay = 4e-4
+    weight_decay = 1e-4
     dropout = 0.3
     input = Input(shape=input_shape)
     x = Conv2D(32, (3, 3), strides=(2, 2), use_bias=False, name='block1_conv1', W_regularizer=keras.regularizers.l2(weight_decay))(input)
@@ -157,7 +157,7 @@ def get_model(label_index, classes=12):
     x = Conv2D(64, (3, 3), use_bias=False, name='block1_conv2', W_regularizer=keras.regularizers.l2(weight_decay))(x)
     x = BatchNormalization(name='block1_conv2_bn')(x)
     x = Activation('relu', name='block1_conv2_act')(x)
-    x = Dropout(dropout)(x)
+    # x = Dropout(dropout)(x)
 
     residual = Conv2D(128, (1, 1), strides=(2, 2), padding='same', use_bias=False, W_regularizer=keras.regularizers.l2(weight_decay))(x)
     residual = BatchNormalization()(residual)
@@ -169,7 +169,7 @@ def get_model(label_index, classes=12):
     # x = Dropout(dropout)(x)
     x = SeparableConv2D(128, (3, 3), padding='same', use_bias=False, name='block2_sepconv2', W_regularizer=keras.regularizers.l2(weight_decay))(x)
     x = BatchNormalization(name='block2_sepconv2_bn')(x)
-    x = Dropout(dropout)(x)
+    # x = Dropout(dropout)(x)
 
     x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block2_pool')(x)
     x = layers.add([x, residual])
@@ -185,7 +185,7 @@ def get_model(label_index, classes=12):
     # x = Dropout(dropout)(x)
     x = SeparableConv2D(256, (3, 3), padding='same', use_bias=False, name='block3_sepconv2', W_regularizer=keras.regularizers.l2(weight_decay))(x)
     x = BatchNormalization(name='block3_sepconv2_bn')(x)
-    x = Dropout(dropout)(x)
+    # x = Dropout(dropout)(x)
 
     x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block3_pool')(x)
     x = layers.add([x, residual])
@@ -280,7 +280,7 @@ def get_model(label_index, classes=12):
 
 def get_model2(label_index, classes=12):
     input_shape = (98, 40, 1)
-    weight_decay = 4e-4
+    weight_decay = 1e-5
     dropout = 0.3
     input = Input(shape=input_shape)
     x = Conv2D(32, (3, 3), strides=(2, 2), use_bias=False, name='block1_conv1', W_regularizer=keras.regularizers.l2(weight_decay))(input)
@@ -290,7 +290,7 @@ def get_model2(label_index, classes=12):
     x = Conv2D(64, (3, 3), use_bias=False, name='block1_conv2', W_regularizer=keras.regularizers.l2(weight_decay))(x)
     x = BatchNormalization(name='block1_conv2_bn')(x)
     x = Activation('relu', name='block1_conv2_act')(x)
-    x = Dropout(dropout)(x)
+    # x = Dropout(dropout)(x)
 
     residual = Conv2D(128, (1, 1), strides=(2, 2), padding='same', use_bias=False, W_regularizer=keras.regularizers.l2(weight_decay))(x)
     residual = BatchNormalization()(residual)
@@ -302,7 +302,7 @@ def get_model2(label_index, classes=12):
     # x = Dropout(dropout)(x)
     x = SeparableConv2D(128, (3, 3), padding='same', use_bias=False, name='block2_sepconv2', W_regularizer=keras.regularizers.l2(weight_decay))(x)
     x = BatchNormalization(name='block2_sepconv2_bn')(x)
-    x = Dropout(dropout)(x)
+    # x = Dropout(dropout)(x)
 
     x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block2_pool')(x)
     x = layers.add([x, residual])
@@ -315,10 +315,10 @@ def get_model2(label_index, classes=12):
     x = SeparableConv2D(256, (3, 3), padding='same', use_bias=False, name='block3_sepconv1', W_regularizer=keras.regularizers.l2(weight_decay))(x)
     x = BatchNormalization(name='block3_sepconv1_bn')(x)
     x = Activation('relu', name='block3_sepconv2_act')(x)
-    # x = Dropout(dropout)(x)
-    x = SeparableConv2D(256, (3, 3), padding='same', use_bias=False, name='block3_sepconv2', W_regularizer=keras.regularizers.l2(weight_decay))(x)
-    x = BatchNormalization(name='block3_sepconv2_bn')(x)
-    x = Dropout(dropout)(x)
+    # # x = Dropout(dropout)(x)
+    # x = SeparableConv2D(256, (3, 3), padding='same', use_bias=False, name='block3_sepconv2', W_regularizer=keras.regularizers.l2(weight_decay))(x)
+    # x = BatchNormalization(name='block3_sepconv2_bn')(x)
+    # # x = Dropout(dropout)(x)
 
     # x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block3_pool')(x)
     # x = layers.add([x, residual])

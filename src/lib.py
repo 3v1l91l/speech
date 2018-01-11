@@ -230,7 +230,7 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     y_mod = y
 
     if random_onoff():
-        timeshift_fac = 0.15 *2*(np.random.uniform()-0.5)
+        timeshift_fac = 0.25 *2*(np.random.uniform()-0.5)
         start = int(length * timeshift_fac)
         if (start > 0):
             y_mod = np.pad(y_mod,(start,0),mode='constant')[0:y_mod.shape[0]]

@@ -267,7 +267,9 @@ def get_model(label_index, classes=12):
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
     # opt = optimizers.Adam(lr=0.0005)
-    model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+    model.compile(optimizer=opt, loss=keras.losses.binary_crossentropy, metrics=[custom_accuracy(label_index)])
+
+    # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
 
     # model = Model(input, x)
     # model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])

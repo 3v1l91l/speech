@@ -104,13 +104,14 @@ def log_specgram(audio, sr=16000):
     n_mfcc = 40
     window_size_ms = 20.0
     window_stride_ms = 10.0
-    # window_size_samples = int(sr * window_size_ms / 1000)
-    # window_stride_samples = int(sr * window_stride_ms / 1000)
+    window_size_samples = int(sr * window_size_ms / 1000)
+    window_stride_samples = int(sr * window_stride_ms / 1000)
     #
-    # logspec = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
+    logspec = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
+    logspec = np.swapaxes(logspec,0,1)
+    # logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.030, frame_stride=0.010,
+    #          num_filters=40, fft_length=512, low_frequency=0)
 
-    logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.030, frame_stride=0.010,
-             num_filters=40, fft_length=512, low_frequency=0)
     # logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
     # logspec -= (np.mean(logspec, axis=0) + 1e-8)
 
@@ -150,11 +151,11 @@ def load_wav_by_path(p):
     #                      wav[max_loudness_ix+loudest_section_samples:])
 
     # wav = signal.resample(wav, 8000)
-    mean = np.mean(np.ravel(wav))
-    std = np.std(np.ravel(wav))
-    if std != 0:
-        wav = wav - mean
-        wav = wav / std
+    # mean = np.mean(np.ravel(wav))
+    # std = np.std(np.ravel(wav))
+    # if std != 0:
+    #     wav = wav - mean
+    #     wav = wav / std
     # wav_max = np.max(wav)
     # if wav_max != 0:
     #     wav = np.array(wav / np.max(wav))

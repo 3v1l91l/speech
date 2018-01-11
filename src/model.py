@@ -43,7 +43,7 @@ def get_model_simple(label_index, classes=12):
     # input_shape = (101, 40, 1)
     input = Input(shape=input_shape)
     num = 256
-    dropout = 0.4
+    dropout = 0.3
     x = Conv2D(num, (10, 4), strides=(2, 1), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
@@ -75,6 +75,7 @@ def get_model_simple(label_index, classes=12):
     x = Dropout(dropout)(x)
 
     x = GlobalAveragePooling2D()(x)
+    x = Dropout(0.5)(x)
 
     # x = Dense(256)(x)
     # x = Activation('relu')(x)

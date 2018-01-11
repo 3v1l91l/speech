@@ -101,7 +101,7 @@ def get_specgrams_augment_silence(wavs, silences):
     return log_specgrams
 
 def log_specgram(audio, sr=16000):
-    n_mfcc = 13
+    n_mfcc = 40
     window_size_ms = 20.0
     window_stride_ms = 10.0
     window_size_samples = int(sr * window_size_ms / 1000)

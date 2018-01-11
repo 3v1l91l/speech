@@ -38,12 +38,76 @@ def get_callbacks(label_index, model_name='model'):
     lr_tracker = LearningRateTracker()
     return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]
 
+# def get_model_simple(label_index, classes=12):
+#     # input_shape = (98, 40, 1)
+#     input_shape = (101, 40, 1)
+#     input = Input(shape=input_shape)
+#     num = 256
+#     x = Conv2D(num, (10, 4), strides=(2, 1), use_bias=False)(input)
+#     x = Activation('relu')(x)
+#     x = BatchNormalization()(x)
+#     x = Dropout(0.25)(x)
+#
+#     x = SeparableConv2D(num, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
+#     x = Activation('relu')(x)
+#     x = BatchNormalization()(x)
+#     x = Dropout(0.25)(x)
+#
+#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+#     x = Activation('relu')(x)
+#     x = BatchNormalization()(x)
+#     x = Dropout(0.25)(x)
+#     #
+#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+#     x = Activation('relu')(x)
+#     x = BatchNormalization()(x)
+#     x = Dropout(0.25)(x)
+#
+#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+#     x = Activation('relu')(x)
+#     x = BatchNormalization()(x)
+#     x = Dropout(0.25)(x)
+#
+#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
+#     x = Activation('relu')(x)
+#     x = BatchNormalization()(x)
+#     x = Dropout(0.25)(x)
+#
+#     x = GlobalAveragePooling2D()(x)
+#
+#     # x = Dense(256)(x)
+#     # x = Activation('relu')(x)
+#
+#
+#     # if classes == 2:
+#     #     # loss = losses.binary_crossentropy
+#     #     x = Dense(classes, activation='sigmoid')(x)
+#     # else:
+#     #     # loss = losses.categorical_crossentropy
+#     #     # loss = custom_categorical_crossentropy
+#     #     x = Dense(classes, activation='softmax')(x)
+#     #     # x = Dense(classes, activation='sigmoid')(x)
+#     # x = Dense(classes, activation='softmax')(x)
+#     x = Dense(classes, activation='sigmoid')(x)
+#
+#     model = Model(input, x)
+#     # opt = optimizers.Adam(lr=0.0012)
+#     opt = optimizers.Adam(lr=0.005)
+#     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+#     # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
+#     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+#     model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
+#
+#     print(model.metrics_names)
+#     return model
+
+
 def get_model_simple(label_index, classes=12):
     # input_shape = (98, 40, 1)
-    input_shape = (101, 40, 1)
+    input_shape = (40, 101, 1)
     input = Input(shape=input_shape)
     num = 256
-    x = Conv2D(num, (10, 4), strides=(2, 1), use_bias=False)(input)
+    x = Conv2D(num, (4, 10), strides=(1, 2), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
     x = Dropout(0.25)(x)

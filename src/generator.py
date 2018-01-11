@@ -89,7 +89,10 @@ def batch_generator_binary(validate, binary_label, X_paths, y, y_label, silences
 
         specgrams = []
         specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
-        specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix):], silences))
+        if binary_label == 'silence':
+            specgrams.extend(get_specgrams_augment_silence(X[len(all_unknown_ix):], silences))
+        else:
+            specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix):], silences))
         res_labels = np.concatenate(([unknown_y]*len(all_unknown_ix),y[known_ix]))
         yield np.stack(specgrams), res_labels
 

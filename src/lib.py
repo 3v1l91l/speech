@@ -104,8 +104,8 @@ def log_specgram(audio, sr=16000):
     n_mfcc = 40
     window_size_ms = 20.0
     window_stride_ms = 10.0
-    window_size_samples = int(sr * window_size_ms / 1000)
-    window_stride_samples = int(sr * window_stride_ms / 1000)
+    # window_size_samples = int(sr * window_size_ms / 1000)
+    # window_stride_samples = int(sr * window_stride_ms / 1000)
     #
     # logspec = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
 

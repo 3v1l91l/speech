@@ -130,7 +130,7 @@ def train_model(binary_label):
 
     # model = get_some_model(classes=12)
     model = get_model_simple(label_index, classes=2)
-    model.load_weights(binary_label+ '.model')
+    # model.load_weights(binary_label+ '.model')
 
     # model = get_model(classes=30)
     # model = get_model_simple(classes=30)

@@ -129,7 +129,7 @@ def train_model(binary_label):
     # model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
     # model = get_some_model(classes=12)
-    model = get_model_simple(label_index, classes=2)
+    model = get_model(label_index, classes=2)
     # model.load_weights(binary_label+ '.model')
 
     # model = get_model(classes=30)
@@ -204,7 +204,7 @@ def main():
     # train_silence_model()
     # for label in 'on off stop go silence'.split():
     #     train_model(label)
-    train_model('silence')
+    train_model('right')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions()

@@ -102,70 +102,6 @@ def get_model_simple(label_index, classes=12):
     print(model.metrics_names)
     return model
 
-
-# def get_model_simple(label_index, classes=12):
-#     # input_shape = (98, 40, 1)
-#     input_shape = (40, 101, 1)
-#     input = Input(shape=input_shape)
-#     num = 256
-#     x = Conv2D(num, (4, 10), strides=(1, 2), use_bias=False)(input)
-#     x = Activation('relu')(x)
-#     x = BatchNormalization()(x)
-#     x = Dropout(0.25)(x)
-#
-#     x = SeparableConv2D(num, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
-#     x = Activation('relu')(x)
-#     x = BatchNormalization()(x)
-#     x = Dropout(0.25)(x)
-#
-#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-#     x = Activation('relu')(x)
-#     x = BatchNormalization()(x)
-#     x = Dropout(0.25)(x)
-#     #
-#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-#     x = Activation('relu')(x)
-#     x = BatchNormalization()(x)
-#     x = Dropout(0.25)(x)
-#
-#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-#     x = Activation('relu')(x)
-#     x = BatchNormalization()(x)
-#     x = Dropout(0.25)(x)
-#
-#     x = SeparableConv2D(num, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-#     x = Activation('relu')(x)
-#     x = BatchNormalization()(x)
-#     x = Dropout(0.25)(x)
-#
-#     x = GlobalAveragePooling2D()(x)
-#
-#     # x = Dense(256)(x)
-#     # x = Activation('relu')(x)
-#
-#
-#     # if classes == 2:
-#     #     # loss = losses.binary_crossentropy
-#     #     x = Dense(classes, activation='sigmoid')(x)
-#     # else:
-#     #     # loss = losses.categorical_crossentropy
-#     #     # loss = custom_categorical_crossentropy
-#     #     x = Dense(classes, activation='softmax')(x)
-#     #     # x = Dense(classes, activation='sigmoid')(x)
-#     # x = Dense(classes, activation='softmax')(x)
-#     x = Dense(classes, activation='sigmoid')(x)
-#
-#     model = Model(input, x)
-#     # opt = optimizers.Adam(lr=0.0012)
-#     opt = optimizers.Adam(lr=0.005)
-#     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
-#     # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
-#     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
-#     model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
-#
-#     print(model.metrics_names)
-#     return model
-
 def custom_loss(label_index):
     def custom_loss_in(y_true,y_pred):
         z = np.zeros(len(label_index), dtype=bool)
@@ -209,7 +145,6 @@ def custom_accuracy(label_index):
     return custom_accuracy_in
 
 def get_model(label_index, classes=12):
-    weight_decay = 1e-4
     input_shape = (98, 40, 1)
     input = Input(shape=input_shape)
     x = Conv2D(32, (3, 3), strides=(2, 2), use_bias=False, name='block1_conv1')(input)
@@ -254,57 +189,57 @@ def get_model(label_index, classes=12):
     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block4_sepconv2')(x)
     x = BatchNormalization(name='block4_sepconv2_bn')(x)
 
-    x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block4_pool')(x)
-    x = layers.add([x, residual])
-
-    for i in range(1):
-        residual = x
-        prefix = 'block' + str(i + 5)
-
-        x = Activation('relu', name=prefix + '_sepconv1_act')(x)
-        x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv1')(x)
-        x = BatchNormalization(name=prefix + '_sepconv1_bn')(x)
-        x = Activation('relu', name=prefix + '_sepconv2_act')(x)
-        x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv2')(x)
-        x = BatchNormalization(name=prefix + '_sepconv2_bn')(x)
-        x = Activation('relu', name=prefix + '_sepconv3_act')(x)
-        x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv3')(x)
-        x = BatchNormalization(name=prefix + '_sepconv3_bn')(x)
-
-        x = layers.add([x, residual])
-
-    residual = Conv2D(1024, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
-    residual = BatchNormalization()(residual)
-
-    x = Activation('relu', name='block13_sepconv1_act')(x)
-    x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block13_sepconv1')(x)
-    x = BatchNormalization(name='block13_sepconv1_bn')(x)
-    x = Activation('relu', name='block13_sepconv2_act')(x)
-    x = SeparableConv2D(1024, (3, 3), padding='same', use_bias=False, name='block13_sepconv2')(x)
-    x = BatchNormalization(name='block13_sepconv2_bn')(x)
-
-    x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block13_pool')(x)
-    x = layers.add([x, residual])
-
-    x = SeparableConv2D(1536, (3, 3), padding='same', use_bias=False, name='block14_sepconv1')(x)
-    x = BatchNormalization(name='block14_sepconv1_bn')(x)
-    x = Activation('relu', name='block14_sepconv1_act')(x)
-
-    x = SeparableConv2D(
-        2048, (3, 3), padding='same',
-        use_bias=False, name='block14_sepconv2',
-        # depthwise_regularizer=keras.regularizers.l2(weight_decay),
-        # pointwise_regularizer=keras.regularizers.l2(weight_decay)
-    )(x)
-    x = BatchNormalization(name='block14_sepconv2_bn')(x)
-    x = Activation('relu', name='block14_sepconv2_act')(x)
+    # x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block4_pool')(x)
+    # x = layers.add([x, residual])
+    #
+    # for i in range(1):
+    #     residual = x
+    #     prefix = 'block' + str(i + 5)
+    #
+    #     x = Activation('relu', name=prefix + '_sepconv1_act')(x)
+    #     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv1')(x)
+    #     x = BatchNormalization(name=prefix + '_sepconv1_bn')(x)
+    #     x = Activation('relu', name=prefix + '_sepconv2_act')(x)
+    #     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv2')(x)
+    #     x = BatchNormalization(name=prefix + '_sepconv2_bn')(x)
+    #     x = Activation('relu', name=prefix + '_sepconv3_act')(x)
+    #     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv3')(x)
+    #     x = BatchNormalization(name=prefix + '_sepconv3_bn')(x)
+    #
+    #     x = layers.add([x, residual])
+    #
+    # residual = Conv2D(1024, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
+    # residual = BatchNormalization()(residual)
+    #
+    # x = Activation('relu', name='block13_sepconv1_act')(x)
+    # x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block13_sepconv1')(x)
+    # x = BatchNormalization(name='block13_sepconv1_bn')(x)
+    # x = Activation('relu', name='block13_sepconv2_act')(x)
+    # x = SeparableConv2D(1024, (3, 3), padding='same', use_bias=False, name='block13_sepconv2')(x)
+    # x = BatchNormalization(name='block13_sepconv2_bn')(x)
+    #
+    # x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block13_pool')(x)
+    # x = layers.add([x, residual])
+    #
+    # x = SeparableConv2D(1536, (3, 3), padding='same', use_bias=False, name='block14_sepconv1')(x)
+    # x = BatchNormalization(name='block14_sepconv1_bn')(x)
+    # x = Activation('relu', name='block14_sepconv1_act')(x)
+    #
+    # x = SeparableConv2D(
+    #     2048, (3, 3), padding='same',
+    #     use_bias=False, name='block14_sepconv2',
+    #     # depthwise_regularizer=keras.regularizers.l2(weight_decay),
+    #     # pointwise_regularizer=keras.regularizers.l2(weight_decay)
+    # )(x)
+    # x = BatchNormalization(name='block14_sepconv2_bn')(x)
+    # x = Activation('relu', name='block14_sepconv2_act')(x)
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
 
     # x = model.output
     # x = Dropout(0.5)(x)
 
-    opt = optimizers.Adam(lr=0.005)
+    # opt = optimizers.Adam(lr=0.005)
     # # opt = optimizers.Adadelta()
     # if classes == 2:
     #     loss = losses.binary_crossentropy

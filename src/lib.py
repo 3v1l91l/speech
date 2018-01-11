@@ -150,11 +150,11 @@ def load_wav_by_path(p):
     #                      wav[max_loudness_ix+loudest_section_samples:])
 
     # wav = signal.resample(wav, 8000)
-    # mean = np.mean(np.ravel(wav))
-    # std = np.std(np.ravel(wav))
-    # if std != 0:
-    #     wav = wav - mean
-    #     wav = wav / std
+    mean = np.mean(np.ravel(wav))
+    std = np.std(np.ravel(wav))
+    if std != 0:
+        wav = wav - mean
+        wav = wav / std
     # wav_max = np.max(wav)
     # if wav_max != 0:
     #     wav = np.array(wav / np.max(wav))

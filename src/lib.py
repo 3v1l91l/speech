@@ -114,11 +114,11 @@ def log_specgram(audio, sr=16000):
     # logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
     # logspec -= (np.mean(logspec, axis=0) + 1e-8)
 
-    mean = np.mean(np.ravel(logspec))
-    std = np.std(np.ravel(logspec))
-    if std != 0:
-        logspec = logspec - mean
-        logspec = logspec / std
+    # mean = np.mean(np.ravel(logspec))
+    # std = np.std(np.ravel(logspec))
+    # if std != 0:
+    #     logspec = logspec - mean
+    #     logspec = logspec / std
     return logspec
 
 def label_transform(labels):

@@ -176,8 +176,11 @@ def make_predictions():
     # silences
     fpaths = [os.path.join(test_data_path, 'clip_ff3eccdb8.wav'),
               os.path.join(test_data_path, 'clip_37f62e83c.wav'),
-              os.path.join(test_data_path, 'clip_8b0fd6b46.wav'),
-              os.path.join(test_data_path, 'clip_0d17d07d0.wav')]
+              os.path.join(test_data_path, 'clip_7adb2a420.wav'),
+              os.path.join(test_data_path, 'clip_8b0fd6b46.wav'), # correct
+              os.path.join(test_data_path, 'clip_0d17d07d0.wav'),
+              os.path.join(test_data_path, 'clip_986b229a7.wav')  # eight
+            ]
     # fpaths = np.random.choice(fpaths, 200)
     index, results = get_predicts(fpaths, models)
 
@@ -201,7 +204,7 @@ def main():
     # train_silence_model()
     # for label in 'on off stop go silence'.split():
     #     train_model(label)
-    train_model('silence')
+    train_model('right')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions()

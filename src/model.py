@@ -148,7 +148,7 @@ def custom_accuracy(label_index):
 def get_model(label_index, classes=12):
     input_shape = (98, 40, 1)
     weight_decay = 4e-4
-    dropout = 0.3
+    dropout = 0.5
     input = Input(shape=input_shape)
     x = Conv2D(32, (3, 3), strides=(2, 2), use_bias=False, name='block1_conv1', W_regularizer=keras.regularizers.l2(weight_decay))(input)
     x = BatchNormalization(name='block1_conv1_bn')(x)

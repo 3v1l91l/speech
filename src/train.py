@@ -186,7 +186,7 @@ def make_predictions():
     #           os.path.join(test_data_path, 'clip_986b229a7.wav')  # eight
     #         ]
     # fpaths = np.random.choice(fpaths, 2000)
-    index, results = get_predicts(fpaths, models)
+    index, results = get_predicts(fpaths[:80000], models)
 
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
@@ -214,8 +214,8 @@ def main():
     # train_model('up')
     # train_tpe()
     # train_model_unknown()
-    validate_predictions()
-    # make_predictions()
+    # validate_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

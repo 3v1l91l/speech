@@ -66,7 +66,7 @@ def validate(path, models):
     valid = prepare_data(get_path_label_df(path))
     # valid.loc[valid.word != binary_label, 'word'] = 'unknown'
     y_true = np.array(valid.word.values)
-    ix = np.random.choice(range(len(y_true)), 1000)
+    ix = np.random.choice(range(len(y_true)), 3000)
 
     _, y_pred = get_predicts(valid.path.values[ix], models)
     # labels = next(os.walk(train_data_path))[1]
@@ -215,7 +215,7 @@ def main():
     # train_tpe()
     # train_model_unknown()
     validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 if __name__ == "__main__":
     main()

@@ -167,7 +167,7 @@ def train_model(binary_label):
 def make_predictions():
     models = dict()
     # model_empty = get_model_simple([], classes=2)
-    for label in legal_labels_without_unknown[:1]:
+    for label in legal_labels_without_unknown:
         # print(label)
         # model = clone_model(model_empty)
         # model.load_weights(label + '.model')

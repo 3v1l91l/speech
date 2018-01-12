@@ -66,7 +66,7 @@ def validate(path, models):
     valid = prepare_data(get_path_label_df(path))
     # valid.loc[valid.word != binary_label, 'word'] = 'unknown'
     y_true = np.array(valid.word.values)
-    # ix = np.random.choice(range(len(y_true)), 1500)
+    ix = np.random.choice(range(len(y_true)), 3000)
 
     _, y_pred = get_predicts(valid.path.values, models)
     # labels = next(os.walk(train_data_path))[1]
@@ -173,17 +173,17 @@ def make_predictions():
         model.load_weights(label + '.model')
         models[label] = model
         
-    # fpaths = glob(os.path.join(test_data_path, '*wav'))
+    fpaths = glob(os.path.join(test_data_path, '*wav'))
 
     # silences
-    fpaths = [os.path.join(test_data_path, 'clip_ff3eccdb8.wav'),
-              os.path.join(test_data_path, 'clip_37f62e83c.wav'),
-              os.path.join(test_data_path, 'clip_7adb2a420.wav'),
-              os.path.join(test_data_path, 'clip_8b0fd6b46.wav'), # correct
-              os.path.join(test_data_path, 'clip_0d17d07d0.wav'),
-              os.path.join(test_data_path, 'clip_986b229a7.wav')  # eight
-            ]
-    # fpaths = np.random.choice(fpaths, 200)
+    # fpaths = [os.path.join(test_data_path, 'clip_ff3eccdb8.wav'),
+    #           os.path.join(test_data_path, 'clip_37f62e83c.wav'),
+    #           os.path.join(test_data_path, 'clip_7adb2a420.wav'),
+    #           os.path.join(test_data_path, 'clip_8b0fd6b46.wav'), # correct
+    #           os.path.join(test_data_path, 'clip_0d17d07d0.wav'),
+    #           os.path.join(test_data_path, 'clip_986b229a7.wav')  # eight
+    #         ]
+    fpaths = np.random.choice(fpaths, 2000)
     index, results = get_predicts(fpaths, models)
 
     df = pd.DataFrame(columns=['fname', 'label'])
@@ -207,11 +207,11 @@ def main():
     # for label in 'off stop go'.split():
     # # for label in 'no right on'.split():
     #     train_model(label)
-    train_model('up')
+    # train_model('up')
     # train_tpe()
     # train_model_unknown()
-    # validate_predictions()
-    # make_predictions()
+    validate_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

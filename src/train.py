@@ -117,6 +117,40 @@ def get_data(binary_label):
 
     return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid
 
+def get_data_one():
+    train, valid = get_train_valid_df()
+    silence_paths = train.path[train.word == 'silence']
+    unknown_paths = train.path[train.word == 'unknown']
+    # if binary_label != 'silence':
+    #     train.drop(train[train.word.isin(['silence'])].index, inplace=True)
+    #     valid.drop(valid[valid.word.isin(['silence'])].index, inplace=True)
+    #     train.reset_index(inplace=True)
+    #     valid.reset_index(inplace=True)
+
+    original_labels_train = np.array(train.word.values)
+    original_labels_valid = np.array(valid.word.values)
+    # train.loc[train.word != binary_label, 'word'] = 'unknown'
+    # valid.loc[valid.word != binary_label, 'word'] = 'unknown'
+
+    len_train = len(train.word.values)
+    temp = label_transform(np.concatenate((train.word.values, valid.word.values)))
+    y_train, y_valid = temp[:len_train], temp[len_train:]
+
+    # y_train = np.zeros((len(train),2),dtype=np.uint8)
+    # y_train[train.word == binary_label,0] = 1
+    # y_train[train.word != binary_label, 1] = 1
+    #
+    # y_valid = np.zeros((len(valid),2),dtype=np.uint8)
+    # y_valid[valid.word == binary_label,0] = 1
+    # y_valid[valid.word != binary_label, 1] = 1
+    #
+    # label_index = np.array([binary_label, 'unknown'])
+    label_index = y_train.columns.values
+    y_train = np.array(y_train.values)
+    y_valid = np.array(y_valid.values)
+
+    return train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid
+
 def train_model(binary_label):
     train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid = get_data(binary_label)
 
@@ -159,6 +193,45 @@ def train_model(binary_label):
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
         callbacks=get_callbacks(label_index, binary_label),
+        workers=24,
+        use_multiprocessing=False,
+        verbose=1
+    )
+
+def train_model_one():
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid = get_data_one()
+
+    rand_silence_paths = silence_paths.iloc[np.random.randint(0, len(silence_paths), 500)]
+    silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
+    rand_unknown_paths = unknown_paths.iloc[np.random.randint(0, len(unknown_paths), 500)]
+    unknowns = np.array(list(map(load_wav_by_path, rand_unknown_paths)))
+
+    # model = load_model('model3.model')
+    # model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
+
+    # model = get_some_model(classes=12)
+    model = get_model_simple(label_index, classes=12)
+    model.summary()
+    unknown_y = label_index == ['unknown']
+    train_possible_unknown_ix = train.word[train.word == 'unknown'].index
+    valid_possible_unknown_ix = valid.word[valid.word == 'unknown'].index
+    train_possible_can_be_flipped_ix = train.word[np.isin(original_labels_train, legal_labels_without_unknown_can_be_flipped)].index
+    valid_possible_can_be_flipped_ix = valid.word[np.isin(original_labels_valid, legal_labels_without_unknown_can_be_flipped)].index
+    train_possible_known_ix = train.word[(train.word != 'unknown') & (train.word != 'silence')].index
+    valid_possible_known_ix = valid.word[(valid.word != 'unknown') & (valid.word != 'silence')].index
+    train_possible_silence_ix = train.word[train.word == 'silence'].index
+    valid_possible_silence_ix = valid.word[valid.word == 'silence'].index
+    train_gen = batch_generator(False, train.path.values, y_train, train.word, silences, unknowns,
+                                       unknown_y, original_labels_train, train_possible_unknown_ix, train_possible_can_be_flipped_ix, train_possible_known_ix, train_possible_silence_ix, batch_size=BATCH_SIZE)
+    valid_gen = batch_generator(True, valid.path.values, y_valid, valid.word, silences, unknowns,
+                                       unknown_y, original_labels_valid, valid_possible_unknown_ix, valid_possible_can_be_flipped_ix, valid_possible_known_ix, valid_possible_silence_ix, batch_size=BATCH_SIZE)
+    model.fit_generator(
+        generator=train_gen,
+        epochs=100,
+        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
+        validation_data=valid_gen,
+        validation_steps=len(y_valid) // BATCH_SIZE // 4,
+        callbacks=get_callbacks(label_index, 'model'),
         workers=24,
         use_multiprocessing=False,
         verbose=1
@@ -212,9 +285,9 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    # train_tpe()
-    # train_model_unknown()
-    validate_predictions()
+    train_model_one()
+
+    # validate_predictions()
     # make_predictions()
 
 if __name__ == "__main__":

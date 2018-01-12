@@ -50,13 +50,13 @@ def get_predicts(fpaths, models):
     # label_index[~np.isin(label_index, legal_labels)] = 'unknown'
     index = []
     results = []
-    batch = 128
+    batch = 256
     label_index = np.array(list(models.keys()))
     for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
         predictions = [model.predict(imgs) for (label,model) in models.items()]
         predictions = np.array([[p[0] for p in p]for p in predictions]).swapaxes(0, 1)
         prediction_labels = np.array(['unknown']*len(fnames))
-        high_prob_lx = np.max(predictions, axis=1) > 0.9
+        high_prob_lx = np.max(predictions, axis=1) > 0.8
         prediction_labels[high_prob_lx] = label_index[np.argmax(predictions[high_prob_lx], axis=1)]
         index.extend(fnames)
         results.extend(list(prediction_labels))
@@ -167,7 +167,7 @@ def train_model(binary_label):
 def make_predictions():
     models = dict()
     # model_empty = get_model_simple([], classes=2)
-    for label in legal_labels_without_unknown:
+    for label in legal_labels_without_unknown[:1]:
         # print(label)
         # model = clone_model(model_empty)
         # model.load_weights(label + '.model')
@@ -185,8 +185,8 @@ def make_predictions():
     #           os.path.join(test_data_path, 'clip_0d17d07d0.wav'),
     #           os.path.join(test_data_path, 'clip_986b229a7.wav')  # eight
     #         ]
-    # fpaths = np.random.choice(fpaths, 2000)
-    index, results = get_predicts(fpaths[80000:], models)
+    # fpaths = np.random.choice(fpaths, 64)
+    index, results = get_predicts(fpaths[:80000], models)
 
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
@@ -211,11 +211,11 @@ def main():
     # for label in 'off stop go'.split():
     # # for label in 'no right on'.split():
     #     train_model(label)
-    train_model('go')
+    # train_model('go')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions()
-    # make_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

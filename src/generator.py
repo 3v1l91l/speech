@@ -111,6 +111,9 @@ def get_triplet_batch(tpe_pred, X, y, y_label, batch_size=128):
 @threadsafe_generator
 def test_data_generator(fpaths, batch=16):
     i = 0
+    imgs = []
+    fnames = []
+    count = 0
     for path in fpaths:
         if i == 0:
             imgs = []
@@ -120,12 +123,13 @@ def test_data_generator(fpaths, batch=16):
         imgs.append(specgram)
         fnames.append(path.split(os.sep)[-1])
         i += 1
+        count += 1
         if i == batch:
             i = 0
             imgs = np.array(imgs)[..., np.newaxis]
             # imgs = np.array(imgs)
             yield fnames, imgs
-    if i < batch:
+    if i < batch and not (i == 0 and (len(fpaths) % batch) == 0):
         imgs = np.array(imgs)[..., np.newaxis]
         # imgs = np.array(imgs)
         yield fnames, imgs

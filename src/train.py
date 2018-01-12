@@ -209,9 +209,9 @@ def validate_predictions():
 def main():
     # train_silence_model()
     # for label in 'off stop go'.split():
-    # # for label in 'no right on'.split():
-    #     train_model(label)
-    train_model('go')
+    for label in legal_labels_without_unknown:
+        train_model(label)
+    # train_model('go')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions()

@@ -166,11 +166,13 @@ def train_model(binary_label):
 
 def make_predictions():
     models = dict()
-    model_empty = get_model_simple([], classes=2)
+    # model_empty = get_model_simple([], classes=2)
     for label in legal_labels_without_unknown:
-        print(label)
-        model = clone_model(model_empty)
-        model.load_weights(label + '.model')
+        # print(label)
+        # model = clone_model(model_empty)
+        # model.load_weights(label + '.model')
+        label_index = np.array([label, 'unknown'])
+        model = load_model(label + '.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
         models[label] = model
         
     fpaths = glob(os.path.join(test_data_path, '*wav'))
@@ -193,11 +195,13 @@ def make_predictions():
 
 def validate_predictions():
     models = dict()
-    model_empty = get_model_simple([], classes=2)
+    # model_empty = get_model_simple([], classes=2)
     for label in legal_labels_without_unknown:
         print(label)
-        model = clone_model(model_empty)
-        model.load_weights(label + '.model')
+        # model = clone_model(model_empty)
+        # model.load_weights(label + '.model')
+        label_index = np.array([label, 'unknown'])
+        model = load_model(label + '.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
         models[label] = model
     # models = {label: load_model(label + '.model') for label in legal_labels_without_unknown}
     validate(test_internal_data_path, models)

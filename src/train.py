@@ -56,7 +56,7 @@ def get_predicts(fpaths, models):
         predictions = [model.predict(imgs) for (label,model) in models.items()]
         predictions = np.array([[p[0] for p in p]for p in predictions]).swapaxes(0, 1)
         prediction_labels = np.array(['unknown']*len(fnames))
-        high_prob_lx = np.max(predictions, axis=1) > 0.8
+        high_prob_lx = np.max(predictions, axis=1) > 0.9
         prediction_labels[high_prob_lx] = label_index[np.argmax(predictions[high_prob_lx], axis=1)]
         index.extend(fnames)
         results.extend(list(prediction_labels))
@@ -186,7 +186,7 @@ def make_predictions():
     #           os.path.join(test_data_path, 'clip_986b229a7.wav')  # eight
     #         ]
     # fpaths = np.random.choice(fpaths, 2000)
-    index, results = get_predicts(fpaths[:80000], models)
+    index, results = get_predicts(fpaths[80000:], models)
 
     df = pd.DataFrame(columns=['fname', 'label'])
     df['fname'] = index
@@ -214,8 +214,8 @@ def main():
     # train_model('up')
     # train_tpe()
     # train_model_unknown()
-    # validate_predictions()
-    make_predictions()
+    validate_predictions()
+    # make_predictions()
 
 if __name__ == "__main__":
     main()

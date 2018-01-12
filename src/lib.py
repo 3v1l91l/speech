@@ -169,16 +169,16 @@ def augment_unknown(y, surely_flip, sr, noises, unknowns):
 
     if surely_flip:
         y_mod = np.flip(y_mod, axis=0)
-    # elif random_onoff():
-    #     y_mod = np.flip(y_mod, axis=0)
-    #
-    # # just mess it up all the way!
-    # if random_onoff():
-    #     unknown = unknowns[random.randint(0, len(unknowns) - 1)]
-    #     if random_onoff():
-    #         unknown = np.flip(unknown, axis=0)
-    #     y_mod = 0.5 * y_mod + 0.5 * np.roll(unknown, int(sr * np.random.uniform(0.1, 0.5, 1)))
-    #     y_mod = np.array(y_mod, dtype=np.int16)
+    elif random_onoff():
+        y_mod = np.flip(y_mod, axis=0)
+
+    # just mess it up all the way!
+    if random_onoff():
+        unknown = unknowns[random.randint(0, len(unknowns) - 1)]
+        if random_onoff():
+            unknown = np.flip(unknown, axis=0)
+        y_mod = 0.5 * y_mod + 0.5 * np.roll(unknown, int(sr * np.random.uniform(0.1, 0.5, 1)))
+        y_mod = np.array(y_mod, dtype=np.int16)
 
     y_mod = augment_data(y_mod, sr, noises)
     return y_mod

@@ -211,11 +211,11 @@ def main():
     # for label in 'off stop go'.split():
     # # for label in 'no right on'.split():
     #     train_model(label)
-    # train_model('go')
+    train_model('go')
     # train_tpe()
     # train_model_unknown()
     # validate_predictions()
-    make_predictions()
+    # make_predictions()
 
 if __name__ == "__main__":
     main()

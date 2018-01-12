@@ -204,8 +204,8 @@ def validate_predictions():
 
 def main():
     # train_silence_model()
-    # for label in 'right on off stop go'.split():
-    for label in 'no right on'.split():
+    for label in 'off stop go'.split():
+    # for label in 'no right on'.split():
         train_model(label)
     # train_model('up')
     # train_tpe()

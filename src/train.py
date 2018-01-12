@@ -214,8 +214,8 @@ def main():
     # train_model('up')
     # train_tpe()
     # train_model_unknown()
-    validate_predictions()
-    # make_predictions()
+    # validate_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

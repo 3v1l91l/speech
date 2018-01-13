@@ -237,7 +237,11 @@ def train_model_one():
     # model = load_model('model3.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index), 'custom_loss_in': custom_loss(label_index)})
 
     # model = get_some_model(classes=12)
-    model = get_model_simple(label_index, classes=12)
+
+    # model = get_model_simple(label_index, classes=12)
+    # model.load_weights('model.model')
+    model = get_model(label_index, classes=12)
+
     model.summary()
     unknown_y = label_index == ['unknown']
     train_possible_unknown_ix = train.word[train.word == 'unknown'].index

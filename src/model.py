@@ -192,8 +192,8 @@ def get_model(label_index, classes=12):
     x = layers.add([x, residual])
     # x = Dropout(dropout)(x)
 
-    # residual = Conv2D(728, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
-    # residual = BatchNormalization()(residual)
+    residual = Conv2D(728, (1, 1), strides=(2, 2), padding='same', use_bias=False)(x)
+    residual = BatchNormalization()(residual)
 
     x = Activation('relu', name='block4_sepconv1_act')(x)
     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block4_sepconv1', W_regularizer=keras.regularizers.l2(weight_decay))(x)

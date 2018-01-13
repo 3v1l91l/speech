@@ -62,6 +62,33 @@ def get_predicts(fpaths, models):
         results.extend(list(prediction_labels))
     return index, results
 
+def get_predicts_one(fpaths, model, label_index):
+    # fpaths = np.random.choice(fpaths, 1000)
+    index = []
+    results = []
+    batch = 128
+    for fnames, imgs in tqdm(test_data_generator(fpaths, batch), total=math.ceil(len(fpaths) / batch)):
+        predicted_probabilities = model.predict(imgs)
+        predict_max_indexes = []
+        unknown_label_index = int((label_index == 'unknown').nonzero()[0])
+        for predicted_probability in predicted_probabilities:
+            predict_max_index = np.argmax(predicted_probability)
+            # if predict_max_index == unknown_label_index:    # try to come up with real label to replicate label distribution
+            #     predicted_probability_without_unknown = predicted_probability
+            #     predicted_probability_without_unknown[unknown_label_index] = 0
+            #     if(any(predicted_probability_without_unknown > 0.3)):
+            #         print(max(predicted_probability))
+            #         predict_max_index = np.argmax(predicted_probability_without_unknown)
+            # if max(predicted_probability) < 0.2:
+            #     predict_max_index = unknown_label_index
+            predict_max_indexes.append(predict_max_index)
+        predicts = [label_index[p] for p in predict_max_indexes]
+
+        index.extend(fnames)
+        results.extend(predicts)
+    return index, results
+
+
 def validate(path, models):
     valid = prepare_data(get_path_label_df(path))
     # valid.loc[valid.word != binary_label, 'word'] = 'unknown'
@@ -266,6 +293,22 @@ def make_predictions():
     df['label'] = results
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
+
+def make_predictions_one():
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid = get_data_one()
+    model = load_model('model.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index),
+                                                      'custom_loss_in': custom_loss(label_index)})
+    fpaths = glob(os.path.join(test_data_path, '*wav'))
+    fpaths = np.random.choice(fpaths, 800)
+
+    index, results = get_predicts_one(fpaths, model, label_index)
+
+    df = pd.DataFrame(columns=['fname', 'label'])
+    df['fname'] = index
+    df['label'] = results
+    df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
+
+
 def validate_predictions():
     models = dict()
     # model_empty = get_model_simple([], classes=2)
@@ -279,6 +322,24 @@ def validate_predictions():
     # models = {label: load_model(label + '.model') for label in legal_labels_without_unknown}
     validate(test_internal_data_path, models)
 
+def validate_one():
+    train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid = get_data_one()
+    valid = prepare_data(get_path_label_df(test_internal_data_path))
+    y_true = np.array(valid.word.values)
+    ix = np.random.choice(range(len(y_true)), 1000)
+    model = load_model('model.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index),
+                                                         'custom_loss_in': custom_loss(label_index)})
+    _, y_pred = get_predicts_one(valid.path.values[ix], model, label_index)
+    # labels = next(os.walk(train_data_path))[1]
+    # keys = list(models.keys())
+    # keys.extend(['unknown'])
+    confusion = confusion_matrix(y_true[ix], y_pred, legal_labels)
+    confusion_df = pd.DataFrame(confusion, index=legal_labels, columns=legal_labels)
+    plt.figure(figsize=(10, 7))
+    svm = sn.heatmap(confusion_df, annot=True, fmt="d")
+    figure = svm.get_figure()
+    figure.savefig('conf.png', dpi=400)
+
 def main():
     # train_silence_model()
     # for label in 'off stop go'.split():
@@ -286,6 +347,8 @@ def main():
     #     train_model(label)
     # train_model('go')
     train_model_one()
+    # validate_one()
+    # make_predictions_one()
 
     # validate_predictions()
     # make_predictions()

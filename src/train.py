@@ -242,7 +242,7 @@ def train_model_one():
     # model.load_weights('model.model')
     # model = get_model(label_index, classes=12)
     model = get_model_simple(label_index, classes=12)
-    model.load_weights('model.model')
+    # model.load_weights('model.model')
 
 
     model.summary()
@@ -353,8 +353,8 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    # train_model_one()
-    validate_one()
+    train_model_one()
+    # validate_one()
     # make_predictions_one()
 
     # validate_predictions()

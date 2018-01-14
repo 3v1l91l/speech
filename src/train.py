@@ -265,7 +265,7 @@ def train_model_one():
         steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks(label_index, 'model'),
+        callbacks=get_callbacks(label_index, 'model2'),
         workers=24,
         use_multiprocessing=False,
         verbose=1

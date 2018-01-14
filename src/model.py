@@ -265,7 +265,8 @@ def get_model(label_index, classes=12):
     #     x = Dense(classes, activation='softmax', kernel_regularizer=keras.regularizers.l2(1e-4))(x)
     x = Dropout(0.5)(x)
 
-    x = Dense(classes, activation='sigmoid')(x)
+    # x = Dense(classes, activation='sigmoid')(x)
+    x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)

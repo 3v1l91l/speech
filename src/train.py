@@ -242,7 +242,7 @@ def train_model_one():
     # model.load_weights('model.model')
     # model = get_model(label_index, classes=12)
     model = get_model_simple(label_index, classes=12)
-    # model.load_weights('model.model')
+    model.load_weights('model.model')
 
 
     model.summary()

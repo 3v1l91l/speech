@@ -79,7 +79,7 @@ def get_predicts_one(fpaths, model, label_index):
             #     if(any(predicted_probability_without_unknown > 0.3)):
             #         print(max(predicted_probability))
             #         predict_max_index = np.argmax(predicted_probability_without_unknown)
-            if max(predicted_probability) < 0.01:
+            if max(predicted_probability) < 0.001:
                 predict_max_index = unknown_label_index
             predict_max_indexes.append(predict_max_index)
         predicts = [label_index[p] for p in predict_max_indexes]
@@ -303,10 +303,10 @@ def make_predictions():
 
 def make_predictions_one():
     train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid = get_data_one()
-    model = load_model('model.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index),
+    model = load_model('model2.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index),
                                                       'custom_loss_in': custom_loss(label_index)})
     fpaths = glob(os.path.join(test_data_path, '*wav'))
-    fpaths = np.random.choice(fpaths, 800)
+    # fpaths = np.random.choice(fpaths, 800)
 
     index, results = get_predicts_one(fpaths, model, label_index)
 
@@ -353,9 +353,9 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    train_model_one()
+    # train_model_one()
     # validate_one()
-    # make_predictions_one()
+    make_predictions_one()
 
     # validate_predictions()
     # make_predictions()

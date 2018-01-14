@@ -208,7 +208,7 @@ def get_model(label_index, classes=12):
     x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block4_pool')(x)
     x = layers.add([x, residual])
 
-    for i in range(8):
+    for i in range(3):
         residual = x
         prefix = 'block' + str(i + 5)
 

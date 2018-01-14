@@ -130,7 +130,8 @@ def custom_accuracy(label_index):
         z[label_index == ['unknown']] = False
         var = K.constant(np.array(z), dtype='float32')
         y_pred2 = y_pred * var
-        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.5), dtype='float32')), y_pred2, y_pred)
+        y_pred = y_pred2
+        # y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.5), dtype='float32')), y_pred2, y_pred)
         # y_pred = K.print_tensor(y_pred)
         return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
     return custom_accuracy_in

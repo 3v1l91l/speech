@@ -89,8 +89,8 @@ def get_model_simple(label_index, classes=12):
     #     # loss = custom_categorical_crossentropy
     #     x = Dense(classes, activation='softmax')(x)
     #     # x = Dense(classes, activation='sigmoid')(x)
-    # x = Dense(classes, activation='softmax')(x)
-    x = Dense(classes, activation='sigmoid')(x)
+    x = Dense(classes, activation='softmax')(x)
+    # x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
     # opt = optimizers.Adam(lr=0.0012)
@@ -130,7 +130,7 @@ def custom_accuracy(label_index):
         z[label_index == ['unknown']] = True
         var = K.constant(np.array(z), dtype='float32')
         y_pred2 = y_pred * var
-        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.9), dtype='float32')), y_pred2, y_pred)
+        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.5), dtype='float32')), y_pred2, y_pred)
         # y_pred = K.print_tensor(y_pred)
         return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
     return custom_accuracy_in

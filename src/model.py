@@ -89,8 +89,8 @@ def get_model_simple(label_index, classes=12):
     #     # loss = custom_categorical_crossentropy
     #     x = Dense(classes, activation='softmax')(x)
     #     # x = Dense(classes, activation='sigmoid')(x)
-    x = Dense(classes, activation='softmax')(x)
-    # x = Dense(classes, activation='sigmoid')(x)
+    # x = Dense(classes, activation='softmax')(x)
+    x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
     # opt = optimizers.Adam(lr=0.0012)

@@ -79,8 +79,8 @@ def get_predicts_one(fpaths, model, label_index):
             #     if(any(predicted_probability_without_unknown > 0.3)):
             #         print(max(predicted_probability))
             #         predict_max_index = np.argmax(predicted_probability_without_unknown)
-            # if max(predicted_probability) < 0.2:
-            #     predict_max_index = unknown_label_index
+            if max(predicted_probability) < 0.9:
+                predict_max_index = unknown_label_index
             predict_max_indexes.append(predict_max_index)
         predicts = [label_index[p] for p in predict_max_indexes]
 
@@ -353,8 +353,8 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    train_model_one()
-    # validate_one()
+    # train_model_one()
+    validate_one()
     # make_predictions_one()
 
     # validate_predictions()

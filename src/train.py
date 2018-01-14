@@ -334,7 +334,7 @@ def validate_one():
     valid = prepare_data(get_path_label_df(test_internal_data_path))
     y_true = np.array(valid.word.values)
     # ix = np.random.choice(range(len(y_true)), 1000)
-    model = load_model('model.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index),
+    model = load_model('model2.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index),
                                                          'custom_loss_in': custom_loss(label_index)})
     _, y_pred = get_predicts_one(valid.path.values, model, label_index)
     # labels = next(os.walk(train_data_path))[1]
@@ -353,8 +353,8 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    train_model_one()
-    # validate_one()
+    # train_model_one()
+    validate_one()
     # make_predictions_one()
 
     # validate_predictions()

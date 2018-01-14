@@ -104,8 +104,8 @@ def batch_generator(validate, X_paths, y, y_label, silences, unknowns, unknown_y
         silence_prop = 0.1
         unknown_flip_known_prop = 0
         if validate:
-            unknown_flip_known_prop = 0.3
-            unknown_prop = 0.1
+            unknown_flip_known_prop = 0.2
+            unknown_prop = 0.2
         batch_size_unknown_flip_known = math.ceil(unknown_flip_known_prop * batch_size)
         batch_size_unknown = math.ceil(unknown_prop * batch_size)
         batch_size_silence = math.ceil(silence_prop * batch_size)

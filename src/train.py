@@ -330,14 +330,14 @@ def validate_one():
     train, valid, y_train, y_valid, label_index, silence_paths, unknown_paths, original_labels_train, original_labels_valid = get_data_one()
     valid = prepare_data(get_path_label_df(test_internal_data_path))
     y_true = np.array(valid.word.values)
-    ix = np.random.choice(range(len(y_true)), 1000)
+    # ix = np.random.choice(range(len(y_true)), 1000)
     model = load_model('model.model', custom_objects={'custom_accuracy_in': custom_accuracy(label_index),
                                                          'custom_loss_in': custom_loss(label_index)})
-    _, y_pred = get_predicts_one(valid.path.values[ix], model, label_index)
+    _, y_pred = get_predicts_one(valid.path.values, model, label_index)
     # labels = next(os.walk(train_data_path))[1]
     # keys = list(models.keys())
     # keys.extend(['unknown'])
-    confusion = confusion_matrix(y_true[ix], y_pred, legal_labels)
+    confusion = confusion_matrix(y_true, y_pred, legal_labels)
     confusion_df = pd.DataFrame(confusion, index=legal_labels, columns=legal_labels)
     plt.figure(figsize=(10, 7))
     svm = sn.heatmap(confusion_df, annot=True, fmt="d")
@@ -350,8 +350,8 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    # train_model_one()
-    validate_one()
+    train_model_one()
+    # validate_one()
     # make_predictions_one()
 
     # validate_predictions()

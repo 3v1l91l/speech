@@ -79,8 +79,9 @@ def get_predicts_one(fpaths, model, label_index):
             #     if(any(predicted_probability_without_unknown > 0.3)):
             #         print(max(predicted_probability))
             #         predict_max_index = np.argmax(predicted_probability_without_unknown)
-            # if max(predicted_probability) < 0.001:
-            #     predict_max_index = unknown_label_index
+            if max(predicted_probability) < 0.5:
+                print(max(predicted_probability))
+                predict_max_index = unknown_label_index
             predict_max_indexes.append(predict_max_index)
         predicts = [label_index[p] for p in predict_max_indexes]
 

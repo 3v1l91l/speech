@@ -254,22 +254,22 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
     #     y_mod[0:minlen] = tmp[0:minlen]
     #     y_mod = np.array(y_mod, dtype=np.int16)
 
-    # # change pitch (w/o speed)
-    # if (allow_pitch) and random_onoff():
-    #     bins_per_octave = 24        # pitch increments are quarter-steps
-    #     pitch_pm = 4                                # +/- this many quarter steps
-    #     pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
-    #     y_mod = librosa.effects.pitch_shift(np.array(y_mod, dtype=np.float), sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
-    #     y_mod = np.array(y_mod, dtype=np.int16)
+    # change pitch (w/o speed)
+    if (allow_pitch) and random_onoff():
+        bins_per_octave = 24        # pitch increments are quarter-steps
+        pitch_pm = 4                                # +/- this many quarter steps
+        pitch_change =  pitch_pm * 2*(np.random.uniform()-0.5)
+        y_mod = librosa.effects.pitch_shift(np.array(y_mod, dtype=np.float), sr, n_steps=pitch_change, bins_per_octave=bins_per_octave)
+        y_mod = np.array(y_mod, dtype=np.int16)
 
-    # # change speed (w/o pitch),
-    # if (allow_speed) and random_onoff():
-    #     speed_change = np.random.uniform(low=0.8,high=1.2)
-    #     tmp = librosa.effects.time_stretch(np.array(y_mod, dtype=np.float), speed_change)
-    #     tmp = np.array(tmp, dtype=np.int16)
-    #     minlen = min( y.shape[0], tmp.shape[0])        # keep same length as original;
-    #     y_mod *= 0                                    # pad with zeros
-    #     y_mod[0:minlen] = tmp[0:minlen]
+    # change speed (w/o pitch),
+    if (allow_speed) and random_onoff():
+        speed_change = np.random.uniform(low=0.8,high=1.2)
+        tmp = librosa.effects.time_stretch(np.array(y_mod, dtype=np.float), speed_change)
+        tmp = np.array(tmp, dtype=np.int16)
+        minlen = min( y.shape[0], tmp.shape[0])        # keep same length as original;
+        y_mod *= 0                                    # pad with zeros
+        y_mod[0:minlen] = tmp[0:minlen]
     #
         #change dynamic range
     if (allow_dyn) and random_onoff():

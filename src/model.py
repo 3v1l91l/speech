@@ -75,7 +75,7 @@ def get_model_simple(label_index, classes=12):
     # x = Dropout(dropout)(x)
 
     x = GlobalAveragePooling2D()(x)
-    x = Dropout(0.5)(x)
+    # x = Dropout(0.5)(x)
 
     # x = Dense(256)(x)
     # x = Activation('relu')(x)
@@ -96,9 +96,9 @@ def get_model_simple(label_index, classes=12):
     # opt = optimizers.Adam(lr=0.0012)
     opt = optimizers.Adam(lr=0.005)
     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
-    # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
     # model.compile(optimizer=opt, loss=losses.binary_crossentropy(), metrics=[custom_accuracy(label_index)])
-    model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
+    # model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
     # model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
 
     print(model.metrics_names)

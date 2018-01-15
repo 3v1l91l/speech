@@ -262,7 +262,7 @@ def train_model_one():
     model.fit_generator(
         generator=train_gen,
         epochs=100,
-        steps_per_epoch=len(y_train) // BATCH_SIZE // 120,
+        steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
         callbacks=get_callbacks(label_index, 'model3'),

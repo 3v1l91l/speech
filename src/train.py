@@ -353,9 +353,9 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    # train_model_one()
+    train_model_one()
     # validate_one()
-    make_predictions_one()
+    # make_predictions_one()
 
     # validate_predictions()
     # make_predictions()

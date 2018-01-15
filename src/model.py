@@ -97,7 +97,7 @@ def get_model_simple(label_index, classes=12):
     opt = optimizers.Adam(lr=0.005)
     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
     # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
-    model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+    model.compile(optimizer=opt, loss=losses.binary_crossentropy(), metrics=[custom_accuracy(label_index)])
     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=['acc'])
     # model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
 
@@ -131,7 +131,7 @@ def custom_accuracy(label_index):
         var = K.constant(np.array(z), dtype='float32')
         y_pred2 = y_pred * var
         y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.5), dtype='float32')), y_pred2, y_pred)
-        # y_pred = K.print_tensor(y_pred)
+        y_pred = K.print_tensor(y_pred)
         return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
     return custom_accuracy_in
 

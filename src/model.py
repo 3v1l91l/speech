@@ -89,16 +89,16 @@ def get_model_simple(label_index, classes=12):
     #     # loss = custom_categorical_crossentropy
     #     x = Dense(classes, activation='softmax')(x)
     #     # x = Dense(classes, activation='sigmoid')(x)
-    x = Dense(classes, activation='softmax')(x)
-    # x = Dense(classes, activation='sigmoid')(x)
+    # x = Dense(classes, activation='softmax')(x)
+    x = Dense(classes, activation='sigmoid')(x)
 
     model = Model(input, x)
     # opt = optimizers.Adam(lr=0.0012)
     opt = optimizers.Adam(lr=0.005)
     # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
     # model.compile(optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
-    model.compile(optimizer=opt, loss=losses.binary_crossentropy(), metrics=[custom_accuracy(label_index)])
-    # model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=['acc'])
+    # model.compile(optimizer=opt, loss=losses.binary_crossentropy(), metrics=[custom_accuracy(label_index)])
+    model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
     # model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
 
     print(model.metrics_names)
@@ -130,7 +130,7 @@ def custom_accuracy(label_index):
         z[label_index == ['unknown']] = True
         var = K.constant(np.array(z), dtype='float32')
         y_pred2 = y_pred * var
-        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.5), dtype='float32')), y_pred2, y_pred)
+        # y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.5), dtype='float32')), y_pred2, y_pred)
         y_pred = K.print_tensor(y_pred)
         return K.cast(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred, axis=-1)), K.floatx())
     return custom_accuracy_in
@@ -208,7 +208,7 @@ def get_model(label_index, classes=12):
     x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block4_pool')(x)
     x = layers.add([x, residual])
 
-    for i in range(3):
+    for i in range(1):
         residual = x
         prefix = 'block' + str(i + 5)
 
@@ -265,15 +265,15 @@ def get_model(label_index, classes=12):
     #     x = Dense(classes, activation='softmax', kernel_regularizer=keras.regularizers.l2(1e-4))(x)
     x = Dropout(0.5)(x)
 
-    # x = Dense(classes, activation='sigmoid')(x)
-    x = Dense(classes, activation='softmax')(x)
+    x = Dense(classes, activation='sigmoid')(x)
+    # x = Dense(classes, activation='softmax')(x)
 
     model = Model(input, x)
     opt = optimizers.Adam(lr=0.005)
     # opt = optimizers.Adam(lr=0.0005)
     # model.compile(optimizer=opt, loss=keras.losses.binary_crossentropy, metrics=[custom_accuracy(label_index)])
 
-    model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
+    model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=[custom_accuracy(label_index)])
 
     # model = Model(input, x)
     # model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])

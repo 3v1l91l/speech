@@ -23,18 +23,18 @@ class LearningRateTracker(Callback):
         print("Learning rate: {}".format(K.eval(lr_with_decay)))
 
 def get_callbacks(label_index, model_name='model'):
-    model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_custom_accuracy_in', save_best_only=True, save_weights_only=False,
-                                       verbose=1)
-    early_stopping = EarlyStopping(monitor='val_custom_accuracy_in', patience=5, verbose=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_custom_accuracy_in', factor=0.5, patience=0, verbose=1)
-    tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
-
-    # model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True,
-    #                                    save_weights_only=False,
+    # model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_custom_accuracy_in', save_best_only=True, save_weights_only=False,
     #                                    verbose=1)
-    # early_stopping = EarlyStopping(monitor='val_acc', patience=7, verbose=1)
-    # reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=0, verbose=1)
+    # early_stopping = EarlyStopping(monitor='val_custom_accuracy_in', patience=5, verbose=1)
+    # reduce_lr = ReduceLROnPlateau(monitor='val_custom_accuracy_in', factor=0.5, patience=0, verbose=1)
     # tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
+
+    model_checkpoint = ModelCheckpoint(model_name + '.model', monitor='val_acc', save_best_only=True,
+                                       save_weights_only=False,
+                                       verbose=1)
+    early_stopping = EarlyStopping(monitor='val_acc', patience=7, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.5, patience=0, verbose=1)
+    tensorboard = TensorBoard(log_dir='./' + model_name + 'logs', write_graph=True)
     lr_tracker = LearningRateTracker()
     return [model_checkpoint, early_stopping, reduce_lr, tensorboard, lr_tracker]
 

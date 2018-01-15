@@ -241,9 +241,9 @@ def train_model_one():
 
     # model = get_model_simple(label_index, classes=12)
     # model.load_weights('model.model')
-    model = get_model(label_index, classes=12)
-    # model = get_model_simple(label_index, classes=12)
-    # model.load_weights('model3.model')
+    # model = get_model(label_index, classes=12)
+    model = get_model_simple(label_index, classes=12)
+    model.load_weights('model3.model')
 
 
     model.summary()
@@ -266,7 +266,7 @@ def train_model_one():
         steps_per_epoch=len(y_train) // BATCH_SIZE // 4,
         validation_data=valid_gen,
         validation_steps=len(y_valid) // BATCH_SIZE // 4,
-        callbacks=get_callbacks(label_index, 'model4'),
+        callbacks=get_callbacks(label_index, 'model3'),
         workers=24,
         use_multiprocessing=False,
         verbose=1
@@ -354,8 +354,8 @@ def main():
     # for label in legal_labels_without_unknown:
     #     train_model(label)
     # train_model('go')
-    # train_model_one()
-    validate_one()
+    train_model_one()
+    # validate_one()
     # make_predictions_one()
 
     # validate_predictions()

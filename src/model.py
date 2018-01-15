@@ -109,7 +109,7 @@ def custom_loss(label_index):
         z = np.zeros(len(label_index), dtype=bool)
         z[label_index == ['unknown']] = True
         var = K.constant(np.array(z), dtype='float32')
-        # y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.9), dtype='float32')), y_pred * var, y_pred)
+        y_pred = K.switch(K.less(K.max(y_pred), K.variable(np.array(0.9), dtype='float32')), y_pred * var, y_pred)
 
         return K.mean(K.categorical_crossentropy(y_true, y_pred), axis=-1)
         # return K.categorical_crossentropy(y_true, y_pred)
@@ -273,7 +273,7 @@ def get_model(label_index, classes=12):
     # opt = optimizers.Adam(lr=0.0005)
     # model.compile(optimizer=opt, loss=keras.losses.binary_crossentropy, metrics=[custom_accuracy(label_index)])
 
-    model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=[custom_accuracy(label_index)])
+    model.compile(optimizer=opt, loss=custom_loss(label_index), metrics=[custom_accuracy(label_index)])
 
     # model = Model(input, x)
     # model.compile(optimizer=opt, loss=loss, metrics=['categorical_accuracy'])

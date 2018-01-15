@@ -245,14 +245,14 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
             # y_mod = (1 - scale) * y_mod + (noise * scale)
             y_mod = np.array(y_mod, dtype=np.int16)
 
-    # if (allow_speedandpitch) and random_onoff():
-    #     length_change = np.random.uniform(low=0.8, high=1.3)
-    #     speed_fac = 1.0 / length_change
-    #     tmp = np.interp(np.arange(0, len(y), speed_fac), np.arange(0, len(y)), y)
-    #     minlen = min(y.shape[0], tmp.shape[0])  # keep same length as original;
-    #     y_mod *= 0  # pad with zeros
-    #     y_mod[0:minlen] = tmp[0:minlen]
-    #     y_mod = np.array(y_mod, dtype=np.int16)
+    if (allow_speedandpitch) and random_onoff():
+        length_change = np.random.uniform(low=0.8, high=1.3)
+        speed_fac = 1.0 / length_change
+        tmp = np.interp(np.arange(0, len(y), speed_fac), np.arange(0, len(y)), y)
+        minlen = min(y.shape[0], tmp.shape[0])  # keep same length as original;
+        y_mod *= 0  # pad with zeros
+        y_mod[0:minlen] = tmp[0:minlen]
+        y_mod = np.array(y_mod, dtype=np.int16)
 
     # # change pitch (w/o speed)
     # if (allow_pitch) and random_onoff():

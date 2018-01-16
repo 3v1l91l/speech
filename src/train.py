@@ -81,9 +81,9 @@ def validate(path, model, silence_model, label_index, silence_label_index):
     # labels = next(os.walk(train_data_path))[1]
     confusion = confusion_matrix(classes, y_pred, labels)
     confusion_df = pd.DataFrame(confusion, index=labels, columns=labels)
-    plt.figure(figsize=(10, 7))
-    sn.heatmap(confusion_df, annot=True, fmt="d")
-    plt.show()
+    svm = sn.heatmap(confusion_df, annot=True, fmt="d")
+    figure = svm.get_figure()
+    figure.savefig('svm_conf.png', dpi=400)
 
 def get_train_valid_df():
     train = prepare_data(get_path_label_df(train_data_path))

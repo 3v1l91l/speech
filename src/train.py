@@ -59,7 +59,7 @@ def get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
         silence_label_index_ix = np.where(silence_label_index == 'silence')
         # unknown_label_index_ix = np.where(silence_label_index == 'unknown')
         for i in range(len(imgs)):
-            if(np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix):
+            if((np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix)) and (silence_predicted_probabilities[i] > 0.8):
                 predicts.extend(['silence'])
             elif(np.max(predicted_probabilities[i]) > 0.8):
                 predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
@@ -83,7 +83,7 @@ def validate(path, model, silence_model, label_index, silence_label_index):
     confusion_df = pd.DataFrame(confusion, index=labels, columns=labels)
     svm = sn.heatmap(confusion_df, annot=True, fmt="d")
     figure = svm.get_figure()
-    figure.savefig('svm_conf.png', dpi=400)
+    figure.savefig('svm_conf.png')
 
 def get_train_valid_df():
     train = prepare_data(get_path_label_df(train_data_path))

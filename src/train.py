@@ -61,7 +61,7 @@ def get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
         for i in range(len(imgs)):
             if np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix and (silence_predicted_probabilities[i][silence_label_index_ix] > 0.8):
                 predicts.extend(['silence'])
-            elif(np.max(predicted_probabilities[i]) > 0.3):
+            elif(np.max(predicted_probabilities[i]) > 0.7):
                 predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])
             else:
                 # print(np.max(predicted_probabilities[i]))

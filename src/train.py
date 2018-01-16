@@ -59,7 +59,7 @@ def get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
         silence_label_index_ix = np.where(silence_label_index == 'silence')
         # unknown_label_index_ix = np.where(silence_label_index == 'unknown')
         for i in range(len(imgs)):
-            if((np.argmax(silence_predicted_probabilities[i]) == silence_label_index_ix)) and (silence_predicted_probabilities[i] > 0.8):
+            if(silence_predicted_probabilities[i][silence_label_index_ix] > 0.8):
                 predicts.extend(['silence'])
             elif(np.max(predicted_probabilities[i]) > 0.8):
                 predicts.extend([label_index[np.argmax(predicted_probabilities[i])]])

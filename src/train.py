@@ -70,7 +70,7 @@ def get_predicts(fpaths, model, silence_model, label_index, silence_label_index)
         index.extend(fnames)
         results.extend(predicts)
         all_classes.extend(classes)
-    return index, results, classes
+    return index, results, all_classes
 
 def validate(path, model, silence_model, label_index, silence_label_index):
     valid = prepare_data(get_path_label_df(path))

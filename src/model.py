@@ -130,32 +130,5 @@ def get_model(classes=12):
     loss = losses.categorical_crossentropy
     if classes == 2:
         loss = losses.binary_crossentropy
-    model.compile(optimizer=opt, loss=losses.categorical_crossentropy, metrics=['accuracy'])
-    return model
-
-
-def get_silence_model(classes=2):
-    input_shape = (98, 40, 1)
-    input = Input(shape=input_shape)
-    x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
-    x = Activation('relu')(x)
-    x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
-
-    x = GlobalAveragePooling2D()(x)
-    x = Dense(classes, activation='sigmoid')(x)
-
-    model = Model(input, x)
-    opt = optimizers.Adam(lr=0.01)
-    model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=opt, loss=loss, metrics=['accuracy'])
     return model

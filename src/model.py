@@ -10,29 +10,29 @@ def get_model_simple(classes=12):
     x = Conv2D(256, (10, 4), strides=(2, 2), use_bias=False)(input)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=2, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.25)(x)
+    # x = Dropout(0.25)(x)
 
     x = SeparableConv2D(256, kernel_size=3, strides=1, padding='same', use_bias=False)(x)
     x = Activation('relu')(x)
     x = BatchNormalization()(x)
+    # x = Dropout(0.25)(x)
 
     x = GlobalAveragePooling2D()(x)
-    x = Dropout(0.5)(x)
 
     x = Dense(classes, activation='softmax')(x)
 

@@ -109,9 +109,9 @@ def get_model(classes=12):
     x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block3_pool')(x)
     x = layers.add([x, residual])
 
-    # residual = Conv2D(728, (1, 1), strides=(2, 2),
-    #                   padding='same', use_bias=False)(x)
-    # residual = BatchNormalization()(residual)
+    residual = Conv2D(728, (1, 1), strides=(2, 2),
+                      padding='same', use_bias=False)(x)
+    residual = BatchNormalization()(residual)
 
     x = Activation('relu', name='block4_sepconv1_act')(x)
     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block4_sepconv1')(x)
@@ -119,6 +119,26 @@ def get_model(classes=12):
     x = Activation('relu', name='block4_sepconv2_act')(x)
     x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name='block4_sepconv2')(x)
     x = BatchNormalization(name='block4_sepconv2_bn')(x)
+
+    x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block4_pool')(x)
+    x = layers.add([x, residual])
+
+    for i in range(3):
+        residual = x
+        prefix = 'block' + str(i + 5)
+
+        x = Activation('relu', name=prefix + '_sepconv1_act')(x)
+        x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv1')(x)
+        x = BatchNormalization(name=prefix + '_sepconv1_bn')(x)
+        x = Activation('relu', name=prefix + '_sepconv2_act')(x)
+        x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv2')(x)
+        x = BatchNormalization(name=prefix + '_sepconv2_bn')(x)
+        x = Activation('relu', name=prefix + '_sepconv3_act')(x)
+        x = SeparableConv2D(728, (3, 3), padding='same', use_bias=False, name=prefix + '_sepconv3')(x)
+        x = BatchNormalization(name=prefix + '_sepconv3_bn')(x)
+
+        x = layers.add([x, residual])
+
 
     # x = MaxPooling2D((3, 3), strides=(2, 2), padding='same', name='block2_pool')(x)
     x = GlobalAveragePooling2D()(x)

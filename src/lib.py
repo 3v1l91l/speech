@@ -109,16 +109,15 @@ def log_specgram(audio, sr=16000):
     #
     # logspec = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, hop_length=window_stride_samples, n_fft=window_size_samples)
 
-    logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.030, frame_stride=0.010,
-             num_filters=40, fft_length=512, low_frequency=0)
+    logspec = speechpy.feature.lmfe(audio, sampling_frequency=sr, frame_length=0.020, frame_stride=0.010,
+             num_filters=40, fft_length=256, low_frequency=0, high_frequency=5500)
     # logspec = librosa.logamplitude(librosa.feature.melspectrogram(audio, n_mels=40, sr=sr, n_fft=window_size_samples, hop_length=window_stride_samples))
-    # logspec -= (np.mean(logspec, axis=0) + 1e-8)
 
-    mean = np.mean(np.ravel(logspec))
-    std = np.std(np.ravel(logspec))
-    if std != 0:
-        logspec = logspec - mean
-        logspec = logspec / std
+    # mean = np.mean(np.ravel(logspec))
+    # std = np.std(np.ravel(logspec))
+    # if std != 0:
+    #     logspec = logspec - mean
+    #     logspec = logspec / std
     return logspec
 
 def label_transform(labels):
@@ -179,7 +178,7 @@ def augment_unknown(y, surely_flip, sr, noises, unknowns):
         y_mod = 0.5 * y_mod + 0.5 * np.roll(unknown, int(sr * np.random.uniform(0.1, 0.5, 1)))
         y_mod = np.array(y_mod, dtype=np.int16)
 
-    y_mod = augment_data(y_mod, sr, noises)
+    augment_data(y_mod, sr, noises)
     return y_mod
 
 def augment_silence(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,

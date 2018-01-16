@@ -43,22 +43,41 @@ def threadsafe_generator(f):
     return g
 
 @threadsafe_generator
+def batch_generator_paths(X_paths, y, y_label, silences, batch_size=128):
+    while True:
+        # known_ix = np.random.choice(y_label.index, size=batch_size)
+        # X = list(map(load_wav_by_path, X_paths[known_ix]))
+        #
+        # specgrams = get_specgrams_augment_known(X, silences)
+        # res_labels = y[known_ix]
+        unknown_proportion = 0.3
+        batch_size_unknown = math.ceil(unknown_proportion * batch_size)
+
+        batch_size_known = batch_size  - batch_size_unknown
+        known_ix = np.random.choice(y_label[np.isin(y_label, legal_labels_without_unknown_and_silence)].index, size=batch_size_known)
+        unknown_ix = np.random.choice(y_label[~np.isin(y_label, legal_labels_without_unknown)].index, size=batch_size_unknown)
+        X = list(map(load_wav_by_path, np.concatenate((X_paths[known_ix], X_paths[unknown_ix]))))
+
+        specgrams = []
+        res_labels = []
+        specgrams.extend(get_specgrams_augment_known(X[:len(known_ix)], silences))
+        specgrams.extend(get_specgrams_augment_known(X[len(known_ix):], silences))
+
+        res_labels = np.concatenate((y[known_ix],y[unknown_ix]))
+
+        yield np.stack(specgrams), res_labels
+
+@threadsafe_generator
 def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns, batch_size=16):
     while True:
         # Try to represent classes distribution
-        unknown_prop = 0.35
-        silence_prop = 0.15
-        unknown_flip_known_prop = 0
+        batch_size_unknown = math.ceil(0.15 * batch_size)
+        batch_size_unknown_flip_known = 0
         if validate:
-            unknown_flip_known_prop = 0
-            # unknown_prop = 0
-        batch_size_unknown_flip_known = math.ceil(unknown_flip_known_prop * batch_size)
-        batch_size_unknown = math.ceil(unknown_prop * batch_size)
-        batch_size_silence = math.ceil(silence_prop * batch_size)
+            batch_size_unknown_flip_known = math.ceil(0.15 * batch_size)
+        batch_size_silence = math.ceil(0.1 * batch_size)
         batch_size_known = batch_size - batch_size_unknown - batch_size_silence - batch_size_unknown_flip_known
-        # unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
-        unknown_ix = np.random.choice(y_label[~y_label.isin(legal_labels)].index, size=batch_size_unknown)
-
+        unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
         unknown_flip_known_ix = np.random.choice(y_label[y_label.isin(legal_labels_without_unknown_can_be_flipped)].index, size=batch_size_unknown_flip_known)
         silence_ix = np.random.choice(y_label[y_label == 'silence'].index, size=batch_size_silence)
         known_ix = np.random.choice(y_label[(y_label != 'unknown') & (y_label != 'silence')].index, size=batch_size_known)
@@ -66,27 +85,85 @@ def batch_generator_paths_old(validate, X_paths, y, y_label, silences, unknowns,
         X = list(map(load_wav_by_path, np.concatenate((X_paths[all_unknown_ix],X_paths[silence_ix],X_paths[known_ix]))))
 
         specgrams = []
+        res_labels = []
 
-        # specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
-        specgrams.extend(get_specgrams_augment_known(X[:len(all_unknown_ix)], silences))
+        specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
+        res_labels.extend(y[all_unknown_ix])
+
         specgrams.extend(get_specgrams_augment_silence(X[len(all_unknown_ix):len(all_unknown_ix) + len(silence_ix)], silences))
+        res_labels.extend(y[silence_ix])
+
         specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix)+len(silence_ix):], silences))
+        res_labels.extend(y[known_ix])
 
         res_labels = np.concatenate((y[all_unknown_ix],y[silence_ix],y[known_ix]))
         yield np.stack(specgrams), res_labels
 
 
-def get_triplet_batch(tpe_pred, X, y, y_label, batch_size=128):
-    set_labels = np.array(list(set(y_label)))
-    positive_label = np.random.choice(set_labels, 1)
-    print(positive_label)
-    positive_ix = np.random.choice(y_label[y_label.isin(positive_label)].index, size=batch_size*2)
-    negative_ix = np.random.choice(y_label[~y_label.isin(positive_label)].index, size=batch_size)
+@threadsafe_generator
+def batch_generator_silence_paths(validate, X_paths, y, y_label, silences, unknowns, original_labels, batch_size=128):
+    while True:
+        # Try to represent classes distribution
+        batch_size_unknown_flip_known_prop = 0
+        unknown_prop = 0.5
+        if validate:
+            batch_size_unknown_flip_known_prop = 0.3
+            unknown_prop = 0.2
+        batch_size_unknown = math.ceil(unknown_prop * batch_size)
+        batch_size_unknown_flip_known = math.ceil(batch_size_unknown_flip_known_prop * batch_size)
+        batch_size_silence = batch_size - batch_size_unknown - batch_size_unknown_flip_known
 
-    positive_samples = tpe_pred.predict(X[positive_ix[:len(positive_ix)//2]])
-    anchor_samples = tpe_pred.predict(X[positive_ix[len(positive_ix)//2:]])
-    negative_samples = tpe_pred.predict(X[negative_ix])
-    return positive_samples, anchor_samples, negative_samples
+        unknown_ix = np.random.choice(y_label[y_label != 'silence'].index, size=batch_size_unknown)
+        silence_ix = np.random.choice(y_label[y_label == 'silence'].index, size=batch_size_silence)
+
+        unknown_flip_known_ix = np.random.choice(
+            y_label[np.isin(original_labels, legal_labels_without_unknown_can_be_flipped)].index,
+            size=batch_size_unknown_flip_known)
+        all_unknown_ix = np.concatenate((unknown_ix, unknown_flip_known_ix))
+        X = list(
+            map(load_wav_by_path, np.concatenate((X_paths[all_unknown_ix], X_paths[silence_ix]))))
+        specgrams = []
+
+        specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(
+            range(len(unknown_flip_known_ix))), silences, unknowns))
+        specgrams.extend(get_specgrams_augment_silence(X[len(all_unknown_ix):], silences))
+
+        res_labels = np.concatenate((y[all_unknown_ix], y[silence_ix]))
+        yield np.stack(specgrams), res_labels
+
+@threadsafe_generator
+def batch_generator_unknown_paths(validate, X_paths, y, y_label, silences, unknowns, original_labels, batch_size=128):
+    while True:
+        # Try to represent classes distribution
+        unknown_prop = 0.5
+        batch_size_unknown_flip_known_prop = 0
+        if validate:
+            batch_size_unknown_flip_known_prop = 0.3
+            unknown_prop = 0.2
+        batch_size_unknown_flip_known = math.ceil(batch_size_unknown_flip_known_prop * batch_size)
+        batch_size_unknown = math.ceil(unknown_prop * batch_size)
+
+        batch_size_silence = batch_size - batch_size_unknown - batch_size_unknown_flip_known
+        unknown_ix = np.random.choice(y_label[y_label == 'unknown'].index, size=batch_size_unknown)
+        known_ix = np.random.choice(y_label[y_label == 'known'].index, size=batch_size_silence)
+
+        unknown_flip_known_ix = np.random.choice(
+            y_label[np.isin(original_labels, legal_labels_without_unknown_can_be_flipped)].index,
+            size=batch_size_unknown_flip_known)
+        all_unknown_ix = np.concatenate((unknown_ix, unknown_flip_known_ix))
+        X = list(
+            map(load_wav_by_path, np.concatenate((X_paths[all_unknown_ix], X_paths[known_ix]))))
+
+        specgrams = []
+        res_labels = []
+        specgrams.extend(get_specgrams_augment_unknown_flip(X[:len(all_unknown_ix)], len(unknown_ix) + np.array(range(len(unknown_flip_known_ix))), silences, unknowns))
+        res_labels.extend(y[unknown_ix])
+
+        specgrams.extend(get_specgrams_augment_known(X[len(all_unknown_ix):], silences))
+        res_labels.extend(y[known_ix])
+
+        res_labels = np.concatenate((y[all_unknown_ix], y[known_ix]))
+        yield np.stack(specgrams), res_labels
 
 def test_data_generator(fpaths, batch=16):
     i = 0
@@ -94,20 +171,22 @@ def test_data_generator(fpaths, batch=16):
         if i == 0:
             imgs = []
             fnames = []
+            classes = []
         samples = load_wav_by_path(path)
         specgram = log_specgram(samples)
         imgs.append(specgram)
         fnames.append(path.split(os.sep)[-1])
+        classes.append(path.split(os.sep)[-2])
         i += 1
         if i == batch:
             i = 0
             imgs = np.array(imgs)[..., np.newaxis]
             # imgs = np.array(imgs)
-            yield fnames, imgs
+            yield classes, fnames, imgs
     if i < batch:
         imgs = np.array(imgs)[..., np.newaxis]
         # imgs = np.array(imgs)
-        yield fnames, imgs
+        yield classes, fnames, imgs
     raise StopIteration()
 
 def valid_data_generator(fpaths, batch=16):

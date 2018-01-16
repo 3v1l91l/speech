@@ -89,8 +89,7 @@ def train_model():
     silences = np.array(list(map(load_wav_by_path, rand_silence_paths)))
 
     # model = load_model('model.model')
-    # model = get_model(classes=31)
-    model = get_model_simple(classes=31)
+    model = get_model(classes=31)
     # model.load_weights('model.model')
     train_gen = batch_generator_paths(train.path.values, y_train, train.word, silences, batch_size=BATCH_SIZE)
     valid_gen = batch_generator_paths(valid.path.values, y_valid, valid.word, silences, batch_size=BATCH_SIZE)
@@ -135,9 +134,9 @@ def make_predictions():
     df.to_csv(os.path.join(out_path, 'sub.csv'), index=False)
 
 def main():
-    train_model()
+    # train_model()
     # validate_predictions()
-    # make_predictions()
+    make_predictions()
 
 if __name__ == "__main__":
     main()

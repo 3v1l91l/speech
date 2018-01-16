@@ -206,8 +206,8 @@ def validate_predictions():
     validate(test_internal_data_path, model, silence_model, label_index, silence_label_index)
 
 def main():
-    train_silence_model()
     train_model()
+    train_silence_model()
     validate_predictions()
     # make_predictions()
 

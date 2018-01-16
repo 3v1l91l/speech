@@ -157,6 +157,7 @@ def load_wav_by_path(p):
     # wav_max = np.max(wav)
     # if wav_max != 0:
     #     wav = np.array(wav / np.max(wav))
+    wav = np.array(wav, dtype=np.float32)
     return wav
 
 def random_onoff():                # randomly turns on or off
@@ -171,12 +172,12 @@ def augment_unknown(y, surely_flip, sr, noises, unknowns):
         y_mod = np.flip(y_mod, axis=0)
 
     # just mess it up all the way!
-    if random_onoff():
-        unknown = unknowns[random.randint(0, len(unknowns) - 1)]
-        if random_onoff():
-            unknown = np.flip(unknown, axis=0)
-        y_mod = 0.5 * y_mod + 0.5 * np.roll(unknown, int(sr * np.random.uniform(0.1, 0.5, 1)))
-        y_mod = np.array(y_mod, dtype=np.int16)
+    # if random_onoff():
+    #     unknown = unknowns[random.randint(0, len(unknowns) - 1)]
+    #     if random_onoff():
+    #         unknown = np.flip(unknown, axis=0)
+    #     y_mod = 0.5 * y_mod + 0.5 * np.roll(unknown, int(sr * np.random.uniform(0.1, 0.5, 1)))
+    #     y_mod = np.array(y_mod, dtype=np.int16)
 
     augment_data(y_mod, sr, noises)
     return y_mod
@@ -197,13 +198,14 @@ def augment_silence(y, sr, noises, allow_speedandpitch = True, allow_pitch = Tru
         noise = noises[random.randint(0, len(noises) - 1)]
         scale = np.random.uniform(low=0.3, high=0.6, size=1)
         if np.max(noise) > 0:
-            y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
+            # y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
+            y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale))
             # y_mod = (1 - scale) * y_mod + (noise * scale)
-            y_mod = np.array(y_mod, dtype=np.int16)
+            # y_mod = np.array(y_mod, dtype=np.int16)
 
-    if random_onoff():
-        scale = np.random.uniform(low=0.0001, high=0.1, size=1)
-        y_mod = np.array(y_mod * scale, dtype=np.int16)
+    # if random_onoff():
+    #     scale = np.random.uniform(low=0.0001, high=0.1, size=1)
+    #     y_mod = np.array(y_mod * scale, dtype=np.int16)
 
     return y_mod
 
@@ -241,7 +243,7 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         if np.max(noise) > 0 :
             y_mod = np.array((1 - scale) * y_mod + (noise * (np.max(y_mod)/ np.max(noise)) * scale), dtype=np.int16)
             # y_mod = (1 - scale) * y_mod + (noise * scale)
-            y_mod = np.array(y_mod, dtype=np.int16)
+            # y_mod = np.array(y_mod, dtype=np.int16)
 
     if (allow_speedandpitch) and random_onoff():
         length_change = np.random.uniform(low=0.8, high=1.3)
@@ -250,7 +252,7 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         minlen = min(y.shape[0], tmp.shape[0])  # keep same length as original;
         y_mod *= 0  # pad with zeros
         y_mod[0:minlen] = tmp[0:minlen]
-        y_mod = np.array(y_mod, dtype=np.int16)
+        # y_mod = np.array(y_mod, dtype=np.int16)
 
     # # change pitch (w/o speed)
     # if (allow_pitch) and random_onoff():
@@ -272,6 +274,7 @@ def augment_data(y, sr, noises, allow_speedandpitch = True, allow_pitch = True,
         #change dynamic range
     if (allow_dyn) and random_onoff():
         dyn_change = np.random.uniform(low=0.5,high=1.3)  # change amplitude
-        y_mod = np.array(y_mod * dyn_change, dtype=np.int16)
+        # y_mod = np.array(y_mod * dyn_change, dtype=np.int16)
+        y_mod = y_mod * dyn_change
 
     return y_mod
